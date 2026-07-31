@@ -1,0 +1,16 @@
+{
+  "name": "utu",
+  "version": "1.0.0",
+  "description": "Rental site for 1-2 bedroom houses with university/workplace proximity recommendations",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^13.0.2",
+    "express": "^5.2.1"
+  }
+}

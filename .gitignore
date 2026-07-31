@@ -1,0 +1,11 @@
+node_modules/
+
+# SQLite database — recreated and seeded automatically on first run.
+# Keeping it out of git also keeps real visitors' phone numbers off GitHub.
+*.db
+*.db-journal
+
+npm-debug.log*
+.env
+.DS_Store
+Thumbs.db

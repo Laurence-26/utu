@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Utu — Rooms near your campus or workplace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FFFFFF; --cream:#FFF6EF;
+  --orange:#F05A0E; --orange-deep:#C74108;
+  --amber:#FFB25E; --amber-soft:#FFE3C7;
+  --ink:#241610; --muted:#93796B; --line:#F3E3D6;
+  --radius:18px; --shadow:0 10px 30px rgba(36,22,16,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:var(--white);color:var(--ink);line-height:1.55}
+h1,h2,h3{font-family:'Bricolage Grotesque','Instrument Sans',sans-serif}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:1rem}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:6px}
+
+.nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:14px clamp(16px,5vw,56px);background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.35rem;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.logo span{color:var(--orange)}
+.nav-links{display:flex;gap:22px;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-weight:500;font-size:.95rem}
+.nav-links a:hover{color:var(--orange)}
+.btn{background:var(--orange);color:#fff;border:none;border-radius:999px;padding:10px 22px;font-weight:600;font-size:.95rem;transition:background .2s,transform .15s}
+.btn:hover{background:var(--orange-deep);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--orange);border:1.5px solid var(--orange)}
+.btn.ghost:hover{background:var(--amber-soft)}
+.btn:disabled{opacity:.6;cursor:wait;transform:none}
+
+.hero{padding:clamp(40px,7vw,84px) clamp(16px,5vw,56px) clamp(28px,4vw,48px);
+  background:radial-gradient(900px 420px at 88% -10%, var(--amber-soft), transparent 65%), var(--white)}
+.hero-inner{max-width:1120px;margin:0 auto}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--orange);margin-bottom:18px}
+.eyebrow::before{content:"";width:26px;height:3px;background:var(--orange);border-radius:2px}
+.hero h1{font-size:clamp(2.1rem,5.2vw,3.9rem);font-weight:800;letter-spacing:-.03em;line-height:1.06;max-width:15ch}
+.hero h1 em{font-style:normal;color:var(--orange)}
+.hero p.lead{margin:18px 0 30px;color:var(--muted);max-width:52ch;font-size:1.06rem}
+
+.anchor-picker{background:var(--cream);border:1.5px solid var(--line);border-radius:var(--radius);
+  padding:22px clamp(16px,3vw,28px);box-shadow:var(--shadow);max-width:880px}
+.sentence{display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-family:'Bricolage Grotesque';font-weight:600;
+  font-size:clamp(1.1rem,2.4vw,1.5rem);letter-spacing:-.01em}
+.mode-switch{display:inline-flex;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.mode-switch button{border:none;background:transparent;border-radius:999px;padding:7px 16px;font-weight:700;font-size:.85em;color:var(--muted);font-family:'Bricolage Grotesque'}
+.mode-switch button.on{background:var(--orange);color:#fff}
+.anchor-select{appearance:none;-webkit-appearance:none;border:1.5px solid var(--orange);background:#fff;color:var(--ink);
+  border-radius:12px;padding:9px 40px 9px 14px;font-weight:700;font-family:'Bricolage Grotesque';font-size:.85em;max-width:100%;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23F05A0E' stroke-width='2.2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center}
+.anchor-hint{margin-top:12px;font-size:.9rem;color:var(--muted)}
+.anchor-hint strong{color:var(--orange)}
+
+.filters{position:sticky;top:64px;z-index:40;padding:14px clamp(16px,5vw,56px);
+  background:rgba(255,255,255,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.filters-inner{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.search-wrap{position:relative;flex:1 1 240px;min-width:200px}
+.search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%)}
+.search-wrap input{width:100%;border:1.5px solid var(--line);border-radius:999px;padding:11px 16px 11px 42px;background:var(--cream)}
+.search-wrap input::placeholder{color:var(--muted)}
+.seg{display:inline-flex;background:var(--cream);border:1.5px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:none;background:transparent;border-radius:999px;padding:8px 16px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.seg button.on{background:var(--ink);color:#fff}
+.filters select{border:1.5px solid var(--line);border-radius:999px;background:var(--cream);padding:10px 36px 10px 16px;
+  font-weight:600;font-size:.9rem;color:var(--ink);appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2393796B' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center}
+
+.results{padding:34px clamp(16px,5vw,56px) 70px}
+.results-inner{max-width:1120px;margin:0 auto}
+.results-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:22px}
+.results-head h2{font-size:1.45rem;font-weight:700;letter-spacing:-.02em}
+.results-head .count{color:var(--muted);font-size:.95rem}
+.grid{display:grid;gap:26px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s, box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.photo{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--amber-soft)}
+.photo svg{width:100%;height:100%;display:block}
+.photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.card:hover .photo img{transform:scale(1.05)}
+.landlord-row{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
+.landlord-row .avatar{width:26px;height:26px;border-radius:50%;background:var(--amber-soft);color:var(--orange-deep);
+  display:grid;place-items:center;font-weight:800;font-size:.72rem;font-family:'Bricolage Grotesque';flex:none}
+.landlord-row b{color:var(--ink)}
+.demo-ll{border:1.5px dashed var(--amber);background:var(--cream);border-radius:12px;padding:12px 14px;margin-bottom:16px;font-size:.86rem}
+.demo-ll p{color:var(--muted);margin-bottom:8px}
+.demo-chip{display:inline-block;border:1.5px solid var(--line);background:#fff;border-radius:999px;
+  padding:5px 12px;margin:3px 4px 0 0;font-weight:600;font-size:.8rem;cursor:pointer}
+.demo-chip:hover{border-color:var(--orange);color:var(--orange)}
+.badge-beds{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.95);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--ink)}
+.badge-dist{position:absolute;top:12px;right:12px;background:var(--orange);color:#fff;border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;display:none;align-items:center;gap:5px}
+.anchored .badge-dist{display:inline-flex}
+.card-body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
+.card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.card h3{font-size:1.08rem;font-weight:700;letter-spacing:-.015em;line-height:1.25}
+.loc{color:var(--muted);font-size:.88rem;display:flex;align-items:center;gap:5px;margin-top:3px}
+.price{text-align:right;white-space:nowrap}
+.price strong{font-family:'Bricolage Grotesque';font-size:1.05rem;color:var(--orange);font-weight:800}
+.price span{display:block;font-size:.72rem;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:.75rem;font-weight:600;color:var(--muted)}
+.commute{margin-top:auto;display:none;flex-direction:column;gap:6px;border-top:1px dashed var(--line);padding-top:12px}
+.anchored .commute{display:flex}
+.commute-row{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted)}
+.commute-row b{color:var(--ink)}
+.meter{height:6px;background:var(--cream);border-radius:99px;overflow:hidden}
+.meter i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--orange));border-radius:99px}
+.card .btn{align-self:flex-start;margin-top:4px;padding:9px 18px;font-size:.88rem}
+
+.empty{text-align:center;padding:70px 20px;color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--cream)}
+.empty h3{font-size:1.2rem;color:var(--ink);margin-bottom:6px}
+.empty button{margin-top:16px}
+
+.how{background:var(--cream);padding:60px clamp(16px,5vw,56px)}
+.how-inner{max-width:1120px;margin:0 auto}
+.how h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;letter-spacing:-.02em;margin-bottom:32px}
+.how-grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.how-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:24px}
+.how-card .ic{width:44px;height:44px;border-radius:12px;background:var(--amber-soft);display:grid;place-items:center;margin-bottom:14px}
+.how-card h3{font-size:1.02rem;margin-bottom:6px}
+.how-card p{font-size:.9rem;color:var(--muted)}
+
+footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between;align-items:center;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+
+/* ---------- Modals ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(36,22,16,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-back.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:480px;width:100%;max-height:92vh;overflow:auto;padding:28px;box-shadow:var(--shadow)}
+.modal h3{font-size:1.3rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.modal .sub{color:var(--muted);font-size:.92rem;margin-bottom:18px}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:600;font-size:.86rem;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--cream)}
+.field textarea{resize:vertical;min-height:70px}
+.field .note{font-size:.78rem;color:var(--muted);margin-top:4px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.form-msg{border-radius:12px;padding:10px 14px;font-size:.88rem;font-weight:600;margin-top:14px;display:none}
+.form-msg.ok{display:block;background:#EAF7EC;color:#1E6B34}
+.form-msg.err{display:block;background:#FDEBEB;color:#A82A2A}
+
+.req-item{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;font-size:.9rem}
+.req-item b{display:block}
+.req-item span{color:var(--muted);font-size:.82rem}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;
+  padding:12px 22px;border-radius:999px;font-weight:600;font-size:.92rem;opacity:0;transition:all .3s;z-index:200;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:640px){ .nav-links a.link{display:none} .filters{top:60px} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="logo" href="#">U<span>tu.</span></a>
+  <div class="nav-links">
+    <a class="link" href="#rooms">Browse rooms</a>
+    <a class="link" href="#how">How it works</a>
+    <a class="link" href="#" onclick="openModal('landlordModal');return false">Landlord requests</a>
+    <button class="btn" onclick="openModal('listModal')">List your house</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Dar es Salaam · 1 &amp; 2 bedroom rentals</div>
+    <h1>Rent a room <em>close to</em> where your day happens.</h1>
+    <p class="lead">Utu lists single-room and two-bedroom houses across the city. Tell us where you study or work, and we'll rank every available room by how close it is — with an honest commute estimate.</p>
+
+    <div class="anchor-picker">
+      <div class="sentence">
+        <span>Show me rooms near</span>
+        <span class="mode-switch" role="group" aria-label="Choose place type">
+          <button id="modeUni" class="on" onclick="setMode('uni')">my university</button>
+          <button id="modeWork" onclick="setMode('work')">my workplace</button>
+        </span>
+        <select id="anchorSelect" class="anchor-select" aria-label="Select your university or workplace" onchange="applyAnchor()">
+          <option value="">— choose a place —</option>
+        </select>
+      </div>
+      <p class="anchor-hint" id="anchorHint">Pick a place and every listing below gets a <strong>distance + daladala commute estimate</strong>, nearest first.</p>
+    </div>
+  </div>
+</header>
+
+<div class="filters" id="rooms">
+  <div class="filters-inner">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="#93796B" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="#93796B" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="locSearch" type="search" placeholder="Search a location — Sinza, Mikocheni, Tabata…" aria-label="Search by location">
+    </div>
+    <div class="seg" role="group" aria-label="Bedrooms">
+      <button data-beds="0" class="on" onclick="setBeds(0,this)">All</button>
+      <button data-beds="1" onclick="setBeds(1,this)">1 bedroom</button>
+      <button data-beds="2" onclick="setBeds(2,this)">2 bedrooms</button>
+    </div>
+    <select id="maxPrice" aria-label="Maximum rent">
+      <option value="0">Any price</option>
+      <option value="65000">Up to 65,000 TZS</option>
+      <option value="70000">Up to 70,000 TZS</option>
+      <option value="75000">Up to 75,000 TZS</option>
+      <option value="80000">Up to 80,000 TZS</option>
+    </select>
+    <select id="sortBy" aria-label="Sort listings">
+      <option value="near">Sort: nearest first</option>
+      <option value="low">Price: low to high</option>
+      <option value="high">Price: high to low</option>
+    </select>
+  </div>
+</div>
+
+<main class="results">
+  <div class="results-inner">
+    <div class="results-head">
+      <h2 id="resultsTitle">All available rooms</h2>
+      <span class="count" id="resultsCount"></span>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden>
+      <h3>No rooms match those filters</h3>
+      <p>Try a wider price range, another neighbourhood, or clear the search box.</p>
+      <button class="btn" onclick="resetFilters()">Clear all filters</button>
+    </div>
+  </div>
+</main>
+
+<section class="how" id="how">
+  <div class="how-inner">
+    <h2>How Utu works</h2>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z" stroke="#F05A0E" stroke-width="2"/><circle cx="12" cy="10" r="2.5" stroke="#F05A0E" stroke-width="2"/></svg></div>
+        <h3>Pick your anchor</h3>
+        <p>Choose your university or workplace. UDSM, Ardhi, MUHAS, DIT, Kariakoo, Posta — the places your week revolves around.</p>
+      </div>
+      <div class="how-card">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 12h10M4 6h16M4 18h7" stroke="#F05A0E" stroke-width="2" stroke-linecap="round"/></svg></div>
+        <h3>See rooms ranked by distance</h3>
+        <p>Every 1- and 2-bedroom listing is re-sorted nearest first, with kilometres and an estimated daladala commute.</p>
+      </div>
+      <div class="how-card">
+        <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9z" stroke="#F05A0E" stroke-width="2" stroke-linejoin="round"/></svg></div>
+        <h3>Book a viewing</h3>
+        <p>Send a real viewing request with your name and phone number. The landlord sees it instantly on their requests page.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span><strong style="color:var(--ink)">Utu.</strong> Rooms near your day.</span>
+  <span>Dar es Salaam, Tanzania · info@utu.example</span>
+</footer>
+
+<!-- Viewing request modal -->
+<div class="modal-back" id="viewModal" onclick="backdropClose(event,'viewModal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="viewTitle">
+    <h3 id="viewTitle">Request a viewing</h3>
+    <p class="sub" id="viewSub"></p>
+    <div class="field"><label for="vName">Your name</label><input id="vName" placeholder="e.g. Amos"></div>
+    <div class="field"><label for="vPhone">Phone number</label><input id="vPhone" placeholder="e.g. 0686860396"></div>
+    <div class="field"><label for="vMsg">Message (optional)</label><textarea id="vMsg" placeholder="When would you like to visit?"></textarea></div>
+    <div class="form-msg" id="viewMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal('viewModal')">Cancel</button>
+      <button class="btn" id="viewSubmit" onclick="submitViewing()">Send request</button>
+    </div>
+  </div>
+</div>
+
+<!-- List your house modal -->
+<div class="modal-back" id="listModal" onclick="backdropClose(event,'listModal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="listTitle">
+    <h3 id="listTitle">List your house</h3>
+    <p class="sub">Free to post. Only 1- and 2-bedroom houses in Dar es Salaam.</p>
+    <div class="field"><label for="lName">Listing title</label><input id="lName" placeholder="e.g. Sinza Self-contained Single"></div>
+    <div class="field">
+      <label for="lArea">Area / neighbourhood</label>
+      <input id="lArea" list="areaList" placeholder="e.g. Sinza">
+      <datalist id="areaList"></datalist>
+      <p class="note">Pick a known area so tenants get accurate distances.</p>
+    </div>
+    <div class="field"><label for="lBeds">Bedrooms</label>
+      <select id="lBeds"><option value="1">1 bedroom</option><option value="2">2 bedrooms</option></select>
+    </div>
+    <div class="field"><label for="lPrice">Monthly rent (TZS)</label><input id="lPrice" type="number" min="10000" step="5000" placeholder="e.g. 70000"></div>
+    <div class="field"><label for="lTags">Features (comma-separated)</label><input id="lTags" placeholder="Self-contained, Water tank, Parking"></div>
+    <div class="field"><label for="lPhoto">Photo link (optional)</label><input id="lPhoto" placeholder="https://… link to a photo of the house"><p class="note">Leave empty and we'll use a stock room photo for now.</p></div>
+    <div class="field"><label for="lLandlord">Your name</label><input id="lLandlord" placeholder="Landlord name"></div>
+    <div class="field"><label for="lPhone">Your phone</label><input id="lPhone" placeholder="e.g. 0754 000 000"><p class="note">Use the same number to check your viewing requests later.</p></div>
+    <div class="form-msg" id="listMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal('listModal')">Cancel</button>
+      <button class="btn" id="listSubmit" onclick="submitListing()">Publish listing</button>
+    </div>
+  </div>
+</div>
+
+<!-- Landlord requests modal -->
+<div class="modal-back" id="landlordModal" onclick="backdropClose(event,'landlordModal')">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="llTitle">
+    <h3 id="llTitle">Your viewing requests</h3>
+    <p class="sub">Enter the phone number you used when listing your house.</p>
+    <div class="demo-ll">
+      <p><strong style="color:var(--orange)">Try a demo landlord account</strong> — tap one to load their requests:</p>
+      <div id="demoChips">Loading…</div>
+    </div>
+    <div class="field"><label for="llPhone">Landlord phone</label><input id="llPhone" placeholder="e.g. 0754 000 000"></div>
+    <div class="modal-actions" style="margin-top:0;margin-bottom:16px">
+      <button class="btn" onclick="loadRequests()">Show requests</button>
+    </div>
+    <div id="llResults"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let ANCHORS = { uni: [], work: [] };
+let state = { mode:'uni', anchor:null, beds:0 };
+let currentListing = null;
+let debounceT = null;
+
+const $ = id => document.getElementById(id);
+const commuteMins = km => Math.max(5, Math.round(km/14*60));
+const tzs = n => Number(n).toLocaleString('en-US');
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function photoSVG(l){
+  const h = l.hue || 24;
+  return `<svg viewBox="0 0 320 200" role="img" aria-label="Illustration of ${esc(l.name)}">
+    <rect width="320" height="200" fill="hsl(${h} 95% 96%)"/>
+    <circle cx="272" cy="34" r="46" fill="hsl(${h+10} 92% 82%)"/>
+    <rect x="0" y="150" width="320" height="50" fill="hsl(${h} 70% 88%)"/>
+    <rect x="86" y="96" width="128" height="62" rx="4" fill="#fff" stroke="hsl(${h} 70% 45%)" stroke-width="3"/>
+    <path d="M78 100 L150 58 L222 100" fill="hsl(${h} 88% 55%)" stroke="hsl(${h} 75% 40%)" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="138" y="120" width="26" height="38" rx="2" fill="hsl(${h} 88% 55%)"/>
+    <rect x="100" y="112" width="22" height="20" rx="2" fill="hsl(${h+10} 92% 82%)" stroke="hsl(${h} 70% 45%)" stroke-width="2"/>
+    <rect x="180" y="112" width="22" height="20" rx="2" fill="hsl(${h+10} 92% 82%)" stroke="hsl(${h} 70% 45%)" stroke-width="2"/>
+    <path d="M40 158 q6 -14 12 0 M252 160 q7 -16 14 0" stroke="hsl(${h} 60% 55%)" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+/* ---------- Toast & modals ---------- */
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+function openModal(id){ $(id).classList.add('open'); }
+function closeModal(id){
+  $(id).classList.remove('open');
+  $(id).querySelectorAll('.form-msg').forEach(m=>m.className='form-msg');
+}
+function backdropClose(e,id){ if(e.target.id===id) closeModal(id); }
+
+/* ---------- Anchor picker ---------- */
+function setMode(m){
+  state.mode = m; state.anchor = null;
+  $('modeUni').classList.toggle('on', m==='uni');
+  $('modeWork').classList.toggle('on', m==='work');
+  $('anchorSelect').innerHTML = `<option value="">— choose a place —</option>` +
+    ANCHORS[m].map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('');
+  applyAnchor();
+}
+function applyAnchor(){
+  const id = $('anchorSelect').value;
+  state.anchor = ANCHORS[state.mode].find(a=>a.id===id) || null;
+  $('anchorHint').innerHTML = state.anchor
+    ? `Rooms below are ranked by distance from <strong>${esc(state.anchor.name)}</strong>.`
+    : `Pick a place and every listing below gets a <strong>distance + daladala commute estimate</strong>, nearest first.`;
+  render();
+}
+function setBeds(n,btn){
+  state.beds = n;
+  document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  render();
+}
+function resetFilters(){
+  state.beds = 0; $('locSearch').value=''; $('maxPrice').value='0';
+  document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on', b.dataset.beds==='0'));
+  render();
+}
+
+/* ---------- Fetch & render listings ---------- */
+async function render(){
+  const p = new URLSearchParams();
+  if (state.beds) p.set('beds', state.beds);
+  const max = $('maxPrice').value; if (max !== '0') p.set('maxPrice', max);
+  const q = $('locSearch').value.trim(); if (q) p.set('q', q);
+  p.set('sort', $('sortBy').value);
+  if (state.anchor){ p.set('lat', state.anchor.lat); p.set('lng', state.anchor.lng); }
+
+  let list = [];
+  try {
+    const res = await fetch('/api/listings?' + p.toString());
+    list = await res.json();
+  } catch {
+    toast('Could not reach the server — is it running?');
+    return;
+  }
+
+  const maxKm = state.anchor ? Math.max(...list.map(l=>l.km||0), 1) : 1;
+  $('resultsTitle').textContent = state.anchor ? `Rooms near ${state.anchor.name}` : 'All available rooms';
+  $('resultsCount').textContent = `${list.length} room${list.length===1?'':'s'} available`;
+  $('empty').hidden = list.length > 0;
+
+  $('grid').innerHTML = list.map(l=>`
+    <article class="card ${state.anchor?'anchored':''}">
+      <div class="photo" id="ph-${l.id}">
+        ${l.photo_url
+          ? `<img src="${esc(l.photo_url)}" alt="Photo of ${esc(l.name)}" loading="lazy"
+                 onerror="this.closest('.photo').insertAdjacentHTML('afterbegin', photoSVG({name:'${esc(l.name)}',hue:${l.hue||24}})); this.remove();">`
+          : photoSVG(l)}
+        <span class="badge-beds">${l.beds} bedroom${l.beds>1?'s':''}</span>
+        <span class="badge-dist">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z" stroke="#fff" stroke-width="2.6"/></svg>
+          ${state.anchor && l.km!=null ? l.km.toFixed(1)+' km' : ''}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="card-top">
+          <div>
+            <h3>${esc(l.name)}</h3>
+            <div class="loc">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z" stroke="#93796B" stroke-width="2.4"/></svg>
+              ${esc(l.area)}, Dar es Salaam
+            </div>
+          </div>
+          <div class="price"><strong>${tzs(l.price)} TZS</strong><span>per month</span></div>
+        </div>
+        <div class="tags">${(l.tags||[]).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+        ${l.landlord_name ? `<div class="landlord-row">
+          <span class="avatar">${esc(l.landlord_name.trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase())}</span>
+          <span>Listed by <b>${esc(l.landlord_name)}</b></span>
+        </div>` : ''}
+        <div class="commute">
+          <div class="commute-row">
+            <span>Daladala commute</span>
+            <b>${state.anchor && l.km!=null ? '≈ '+commuteMins(l.km)+' min' : ''}</b>
+          </div>
+          <div class="meter"><i style="width:${state.anchor && l.km!=null ? Math.max(8, 100-(l.km/maxKm)*88) : 0}%"></i></div>
+        </div>
+        <button class="btn" onclick='openViewing(${l.id}, ${JSON.stringify(String(l.name))})'>Request a viewing</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+/* ---------- Viewing requests ---------- */
+function openViewing(id, name){
+  currentListing = id;
+  $('viewSub').textContent = name;
+  $('vName').value=''; $('vPhone').value=''; $('vMsg').value='';
+  openModal('viewModal');
+}
+async function submitViewing(){
+  const msgBox = $('viewMsg'); msgBox.className='form-msg';
+  const body = {
+    listing_id: currentListing,
+    visitor_name: $('vName').value.trim(),
+    visitor_phone: $('vPhone').value.trim(),
+    message: $('vMsg').value.trim()
+  };
+  if (!body.visitor_name || !body.visitor_phone){
+    msgBox.textContent='Please enter your name and phone number.'; msgBox.className='form-msg err'; return;
+  }
+  $('viewSubmit').disabled = true;
+  try {
+    const res = await fetch('/api/viewings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    closeModal('viewModal');
+    toast(data.message + ' The landlord will contact you.');
+  } catch (e) {
+    msgBox.textContent = e.message; msgBox.className='form-msg err';
+  } finally { $('viewSubmit').disabled = false; }
+}
+
+/* ---------- List your house ---------- */
+async function submitListing(){
+  const msgBox = $('listMsg'); msgBox.className='form-msg';
+  const body = {
+    name: $('lName').value.trim(),
+    area: $('lArea').value.trim(),
+    beds: +$('lBeds').value,
+    price: +$('lPrice').value,
+    tags: $('lTags').value,
+    photo_url: $('lPhoto').value.trim(),
+    landlord_name: $('lLandlord').value.trim(),
+    landlord_phone: $('lPhone').value.trim()
+  };
+  if (!body.name || !body.area || !body.price || !body.landlord_name || !body.landlord_phone){
+    msgBox.textContent='Please fill in every field except features.'; msgBox.className='form-msg err'; return;
+  }
+  $('listSubmit').disabled = true;
+  try {
+    const res = await fetch('/api/listings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    closeModal('listModal');
+    toast('Listing published — it is live below.');
+    ['lName','lArea','lPrice','lTags','lPhoto','lLandlord','lPhone'].forEach(id=>$(id).value='');
+    render();
+  } catch (e) {
+    msgBox.textContent = e.message; msgBox.className='form-msg err';
+  } finally { $('listSubmit').disabled = false; }
+}
+
+/* ---------- Landlord requests ---------- */
+async function loadRequests(){
+  const phone = $('llPhone').value.trim();
+  const box = $('llResults');
+  if (!phone){ box.innerHTML = '<p class="sub">Enter your phone number first.</p>'; return; }
+  box.innerHTML = '<p class="sub">Loading…</p>';
+  try {
+    const res = await fetch('/api/viewings?phone=' + encodeURIComponent(phone));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not load requests.');
+    box.innerHTML = data.length
+      ? data.map(r=>`<div class="req-item">
+          <b>${esc(r.visitor_name)} · ${esc(r.visitor_phone)}</b>
+          wants to view <b>${esc(r.listing_name)}</b> (${esc(r.area)})
+          ${r.message ? `<span>"${esc(r.message)}"</span>` : ''}
+          <span>${esc(r.created_at)} UTC</span>
+        </div>`).join('')
+      : '<p class="sub">No viewing requests yet for that number.</p>';
+  } catch (e) {
+    box.innerHTML = `<p class="sub">${esc(e.message)}</p>`;
+  }
+}
+
+/* ---------- Wire up & init ---------- */
+$('locSearch').addEventListener('input', ()=>{ clearTimeout(debounceT); debounceT=setTimeout(render, 250); });
+$('maxPrice').addEventListener('change', render);
+$('sortBy').addEventListener('change', render);
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') document.querySelectorAll('.modal-back.open').forEach(m=>m.classList.remove('open')); });
+
+function useDemoLandlord(phone){
+  $('llPhone').value = phone;
+  loadRequests();
+}
+
+(async function init(){
+  try {
+    const [a, areas, landlords] = await Promise.all([
+      fetch('/api/anchors').then(r=>r.json()),
+      fetch('/api/areas').then(r=>r.json()),
+      fetch('/api/landlords').then(r=>r.json())
+    ]);
+    ANCHORS = a;
+    $('areaList').innerHTML = areas.map(x=>`<option value="${esc(x[0].toUpperCase()+x.slice(1))}">`).join('');
+    $('demoChips').innerHTML = landlords.map(l =>
+      `<button class="demo-chip" onclick="useDemoLandlord('${esc(l.phone)}')">${esc(l.name)} · ${esc(l.phone)} (${l.listings} house${l.listings===1?'':'s'})</button>`
+    ).join('') || 'No demo accounts yet.';
+  } catch { toast('Could not reach the server — is it running?'); }
+  setMode('uni');
+})();
+</script>
+</body>
+</html>
