@@ -2,7 +2,7 @@
   "name": "utu",
   "version": "1.0.0",
   "description": "Rental site for 1-2 bedroom houses with university/workplace proximity recommendations",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
