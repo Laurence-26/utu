@@ -5,8 +5,27 @@ const db = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* Anyone with this key can read every visitor's name and phone number, so it
+   must be set to something private before the admin panel goes online. */
+const ADMIN_KEY = process.env.ADMIN_KEY || 'utu-admin';
+const DEFAULT_KEY_IN_USE = !process.env.ADMIN_KEY;
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+/* ---------- Calling: enabled only when the site is served locally ----------
+   Tapping "Call" opens the device dialer, so it stays switched off on the
+   public deployment and works when you run the app on your own machine. */
+function callsEnabled(req){
+  const host = String(req.hostname || '').toLowerCase();
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+         /^10\./.test(host) || /^192\.168\./.test(host) ||
+         /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+}
+
+app.get('/api/config', (req, res) => res.json({ callsEnabled: callsEnabled(req) }));
+
+app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 
 /* ---------- Anchors: universities & workplaces ---------- */
 const ANCHORS = {
@@ -62,13 +81,14 @@ app.get('/api/landlords', (_req, res) => {
 
 app.get('/api/areas', (_req, res) => res.json(Object.keys(AREA_COORDS).sort()));
 
-// GET /api/listings?beds=1&maxPrice=250000&q=sinza&lat=-6.77&lng=39.20&sort=near
+// GET /api/listings?beds=1&maxPrice=70000&master=1&q=sinza&lat=-6.77&lng=39.20&sort=near
 app.get('/api/listings', (req, res) => {
-  const { beds, maxPrice, q, lat, lng, sort } = req.query;
+  const { beds, maxPrice, q, lat, lng, sort, master } = req.query;
   let rows = db.prepare('SELECT * FROM listings ORDER BY created_at DESC').all()
-    .map(r => ({ ...r, tags: JSON.parse(r.tags || '[]') }));
+    .map(r => ({ ...r, tags: JSON.parse(r.tags || '[]'), master: !!r.master }));
 
   if (beds && +beds > 0) rows = rows.filter(r => r.beds === +beds);
+  if (master === '1') rows = rows.filter(r => r.master);
   if (maxPrice && +maxPrice > 0) rows = rows.filter(r => r.price <= +maxPrice);
   if (q) {
     const s = String(q).toLowerCase();
@@ -92,7 +112,7 @@ const FALLBACK_PHOTOS = [
 ].map(id => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=60`);
 
 app.post('/api/listings', (req, res) => {
-  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url } = req.body || {};
+  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master } = req.body || {};
   if (!name || !area || !beds || !price || !landlord_name || !landlord_phone)
     return res.status(400).json({ error: 'name, area, beds, price, landlord_name and landlord_phone are required.' });
   if (![1, 2].includes(+beds))
@@ -115,10 +135,10 @@ app.post('/api/listings', (req, res) => {
   const llName = String(landlord_name).trim(), llPhone = String(landlord_phone).trim();
   db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)').run(llName, llPhone);
 
-  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url)
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(String(name).trim(), String(area).trim(), +beds, +price, lat, lng,
-         JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo);
+         JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo, master ? 1 : 0);
 
   res.status(201).json({ id: info.lastInsertRowid, message: 'Listing published.' });
 });
@@ -151,4 +171,111 @@ app.get('/api/viewings', (req, res) => {
   res.json(rows);
 });
 
-app.listen(PORT, () => console.log(`Utu running → http://localhost:${PORT}`));
+/* ---------- Chat: visitor side ---------- */
+// A visitor opens the chat widget. Returns the session id their browser stores.
+app.post('/api/chat/start', (req, res) => {
+  const { name, phone } = req.body || {};
+  const sid = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  db.prepare('INSERT INTO chats (session_id, visitor_name, visitor_phone) VALUES (?,?,?)')
+    .run(sid, String(name || '').trim() || 'Visitor', String(phone || '').trim());
+  db.prepare(`INSERT INTO messages (session_id, sender, body) VALUES (?, 'admin', ?)`)
+    .run(sid, 'Karibu Utu! Ask us anything about a room and we will reply here.');
+  res.status(201).json({ session_id: sid });
+});
+
+app.get('/api/chat/:sid', (req, res) => {
+  const chat = db.prepare('SELECT * FROM chats WHERE session_id=?').get(req.params.sid);
+  if (!chat) return res.status(404).json({ error: 'Chat not found. Start a new one.' });
+  const messages = db.prepare('SELECT id, sender, body, created_at FROM messages WHERE session_id=? ORDER BY id').all(req.params.sid);
+  res.json({ chat, messages, callsEnabled: callsEnabled(req) });
+});
+
+app.post('/api/chat/:sid', (req, res) => {
+  const chat = db.prepare('SELECT session_id FROM chats WHERE session_id=?').get(req.params.sid);
+  if (!chat) return res.status(404).json({ error: 'Chat not found. Start a new one.' });
+  const body = String((req.body || {}).body || '').trim();
+  if (!body) return res.status(400).json({ error: 'Type a message first.' });
+  const info = db.prepare(`INSERT INTO messages (session_id, sender, body) VALUES (?, 'user', ?)`)
+    .run(req.params.sid, body.slice(0, 1000));
+  res.status(201).json({ id: info.lastInsertRowid });
+});
+
+/* ---------- Admin panel ---------- */
+function requireAdmin(req, res, next){
+  const key = req.get('x-admin-key') || req.query.key;
+  if (key !== ADMIN_KEY) return res.status(401).json({ error: 'Wrong admin key.' });
+  next();
+}
+
+app.post('/api/admin/login', (req, res) => {
+  if (String((req.body || {}).key) !== ADMIN_KEY) return res.status(401).json({ error: 'Wrong admin key.' });
+  res.json({ ok: true, callsEnabled: callsEnabled(req), usingDefaultKey: DEFAULT_KEY_IN_USE });
+});
+
+// Every viewing request across every landlord
+app.get('/api/admin/viewings', requireAdmin, (_req, res) => {
+  res.json(db.prepare(`
+    SELECT v.id, v.visitor_name, v.visitor_phone, v.message, v.status, v.created_at,
+           l.name AS listing_name, l.area, l.price, l.beds, l.master,
+           l.landlord_name, l.landlord_phone
+    FROM viewings v JOIN listings l ON l.id = v.listing_id
+    ORDER BY v.created_at DESC, v.id DESC`).all());
+});
+
+app.patch('/api/admin/viewings/:id', requireAdmin, (req, res) => {
+  const status = String((req.body || {}).status || '');
+  if (!['pending', 'contacted', 'closed'].includes(status))
+    return res.status(400).json({ error: 'Status must be pending, contacted or closed.' });
+  const info = db.prepare('UPDATE viewings SET status=? WHERE id=?').run(status, +req.params.id);
+  if (!info.changes) return res.status(404).json({ error: 'Request not found.' });
+  res.json({ ok: true, status });
+});
+
+app.get('/api/admin/summary', requireAdmin, (req, res) => {
+  const one = sql => db.prepare(sql).get().n;
+  res.json({
+    listings: one('SELECT COUNT(*) n FROM listings'),
+    master: one('SELECT COUNT(*) n FROM listings WHERE master=1'),
+    viewings: one('SELECT COUNT(*) n FROM viewings'),
+    pending: one(`SELECT COUNT(*) n FROM viewings WHERE status='pending'`),
+    chats: one('SELECT COUNT(*) n FROM chats'),
+    unread: one(`SELECT COUNT(DISTINCT session_id) n FROM messages WHERE sender='user'`),
+    callsEnabled: callsEnabled(req),
+    usingDefaultKey: DEFAULT_KEY_IN_USE
+  });
+});
+
+app.get('/api/admin/chats', requireAdmin, (_req, res) => {
+  res.json(db.prepare(`
+    SELECT c.session_id, c.visitor_name, c.visitor_phone, c.created_at,
+           (SELECT body FROM messages m WHERE m.session_id=c.session_id ORDER BY m.id DESC LIMIT 1) AS last_body,
+           (SELECT sender FROM messages m WHERE m.session_id=c.session_id ORDER BY m.id DESC LIMIT 1) AS last_sender,
+           (SELECT COUNT(*) FROM messages m WHERE m.session_id=c.session_id) AS total
+    FROM chats c ORDER BY c.created_at DESC`).all());
+});
+
+app.get('/api/admin/chats/:sid', requireAdmin, (req, res) => {
+  const chat = db.prepare('SELECT * FROM chats WHERE session_id=?').get(req.params.sid);
+  if (!chat) return res.status(404).json({ error: 'Chat not found.' });
+  res.json({
+    chat,
+    messages: db.prepare('SELECT id, sender, body, created_at FROM messages WHERE session_id=? ORDER BY id').all(req.params.sid)
+  });
+});
+
+app.post('/api/admin/chats/:sid', requireAdmin, (req, res) => {
+  const chat = db.prepare('SELECT session_id FROM chats WHERE session_id=?').get(req.params.sid);
+  if (!chat) return res.status(404).json({ error: 'Chat not found.' });
+  const body = String((req.body || {}).body || '').trim();
+  if (!body) return res.status(400).json({ error: 'Type a reply first.' });
+  const info = db.prepare(`INSERT INTO messages (session_id, sender, body) VALUES (?, 'admin', ?)`)
+    .run(req.params.sid, body.slice(0, 1000));
+  res.status(201).json({ id: info.lastInsertRowid });
+});
+
+app.listen(PORT, () => {
+  console.log(`Utu running → http://localhost:${PORT}`);
+  console.log(`Admin panel → http://localhost:${PORT}/admin`);
+  if (DEFAULT_KEY_IN_USE)
+    console.log(`Admin key   → "${ADMIN_KEY}" (development default — set ADMIN_KEY before deploying)`);
+});

@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS listings (
   landlord_name TEXT,
   landlord_phone TEXT,
   hue INTEGER DEFAULT 24,
+  master INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -34,11 +35,31 @@ CREATE TABLE IF NOT EXISTS viewings (
   status TEXT DEFAULT 'pending',
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- One chat thread per visitor. The browser keeps the session id in localStorage
+-- so a visitor returning to the site picks their conversation back up.
+CREATE TABLE IF NOT EXISTS chats (
+  session_id TEXT PRIMARY KEY,
+  visitor_name TEXT,
+  visitor_phone TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT NOT NULL REFERENCES chats(session_id),
+  sender TEXT NOT NULL CHECK (sender IN ('user','admin')),
+  body TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, id);
 `);
 
-// Migration for older databases created before photo_url existed
+// Migrations for databases created before these columns existed
 const cols = db.prepare(`PRAGMA table_info(listings)`).all().map(c => c.name);
 if (!cols.includes('photo_url')) db.exec(`ALTER TABLE listings ADD COLUMN photo_url TEXT`);
+if (!cols.includes('master'))    db.exec(`ALTER TABLE listings ADD COLUMN master INTEGER DEFAULT 0`);
 
 /* ---------------- Demo landlords ---------------- */
 const DEMO_LANDLORDS = [
@@ -51,22 +72,23 @@ const DEMO_LANDLORDS = [
 /* Free-to-use Unsplash photos of rooms and houses */
 const IMG = id => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=60`;
 
+/* master = 1 means the main bedroom is en-suite (bathroom inside the bedroom) */
 const seedListings = [
-  // name, area, beds, price, lat, lng, tags, hue, landlordIndex, photo
-  ['Sinza Palestina Single Room','Sinza',1,68000,-6.7789,39.2262,['Self-contained','Water tank','Luku meter'],24,0,IMG('photo-1536376072261-38c75010e6c9')],
-  ['Mikocheni B Garden Flat','Mikocheni',2,78000,-6.7616,39.2436,['Tiled floors','Parking','Fenced'],16,2,IMG('photo-1512917774080-9991f1c4c750')],
-  ['Ubungo Riverside Room','Ubungo',1,62000,-6.7893,39.2075,['Near daladala stand','Shared fence'],30,0,IMG('photo-1505693416388-ac5ce068fe85')],
-  ['Kijitonyama Twin Rooms','Kijitonyama',2,74000,-6.7686,39.2381,['Self-contained','Kitchen inside','Ceiling fans'],20,1,IMG('photo-1522708323590-d24dbb6b0267')],
-  ['Mwenge Makumbusho Single','Mwenge',1,70000,-6.7647,39.2249,['Near Mwenge stand','Water 24/7'],34,1,IMG('photo-1540518614846-7eded433c457')],
-  ['Tabata Segerea Family House','Tabata',2,72000,-6.8320,39.2242,['Big compound','Bore-hole water'],14,3,IMG('photo-1568605114967-8130f3a36994')],
-  ['Upanga Seaview Single','Upanga',1,73000,-6.8046,39.2846,['Near Muhimbili','Tiled','Secure gate'],26,2,IMG('photo-1502672260266-1c1ef2d93688')],
-  ['Msasani Bonde la Mpunga 2BR','Msasani',2,80000,-6.7565,39.2669,['Modern finish','Parking','Standby water'],18,2,IMG('photo-1600585154340-be6161a56a0c')],
-  ['Kinondoni Mkwajuni Room','Kinondoni',1,69000,-6.7854,39.2564,['Close to road','Shared veranda'],28,3,IMG('photo-1560448204-e02f11c3d0e2')],
-  ['Mbezi Beach Makonde 2BR','Mbezi Beach',2,76000,-6.7211,39.2249,['Sea breeze','Fenced','Parking'],22,2,IMG('photo-1600596542815-ffad4c1539a9')],
-  ['Ilala Bungoni Single Room','Ilala',1,64000,-6.8262,39.2624,['Near Kariakoo','Luku meter'],32,0,IMG('photo-1554995207-c18c203602cb')],
-  ['Kigamboni Ferry-side 2BR','Kigamboni',2,71000,-6.8323,39.3060,['Quiet street','Big rooms'],12,3,IMG('photo-1570129477492-45c003edd2be')],
-  ['Manzese Argentina Single','Manzese',1,60000,-6.7973,39.2320,['Budget friendly','Near daladala'],36,1,IMG('photo-1484154218962-a197022b5858')],
-  ['Kijitonyama Sayansi Studio','Kijitonyama',1,66000,-6.7735,39.2320,['Self-contained','Near COSTECH'],25,1,IMG('photo-1493809842364-78817add7ffb')],
+  // name, area, beds, price, lat, lng, tags, hue, landlordIndex, photo, master
+  ['Sinza Palestina Single Room','Sinza',1,68000,-6.7789,39.2262,['Self-contained','Water tank','Luku meter'],24,0,IMG('photo-1536376072261-38c75010e6c9'),0],
+  ['Mikocheni B Garden Flat','Mikocheni',2,78000,-6.7616,39.2436,['Tiled floors','Parking','Fenced'],16,2,IMG('photo-1512917774080-9991f1c4c750'),1],
+  ['Ubungo Riverside Room','Ubungo',1,62000,-6.7893,39.2075,['Near daladala stand','Shared fence'],30,0,IMG('photo-1505693416388-ac5ce068fe85'),0],
+  ['Kijitonyama Twin Rooms','Kijitonyama',2,74000,-6.7686,39.2381,['Self-contained','Kitchen inside','Ceiling fans'],20,1,IMG('photo-1522708323590-d24dbb6b0267'),1],
+  ['Mwenge Makumbusho Single','Mwenge',1,70000,-6.7647,39.2249,['Near Mwenge stand','Water 24/7'],34,1,IMG('photo-1540518614846-7eded433c457'),0],
+  ['Tabata Segerea Family House','Tabata',2,72000,-6.8320,39.2242,['Big compound','Bore-hole water'],14,3,IMG('photo-1568605114967-8130f3a36994'),1],
+  ['Upanga Seaview Single','Upanga',1,73000,-6.8046,39.2846,['Near Muhimbili','Tiled','Secure gate'],26,2,IMG('photo-1502672260266-1c1ef2d93688'),1],
+  ['Msasani Bonde la Mpunga 2BR','Msasani',2,80000,-6.7565,39.2669,['Modern finish','Parking','Standby water'],18,2,IMG('photo-1600585154340-be6161a56a0c'),1],
+  ['Kinondoni Mkwajuni Room','Kinondoni',1,69000,-6.7854,39.2564,['Close to road','Shared veranda'],28,3,IMG('photo-1560448204-e02f11c3d0e2'),0],
+  ['Mbezi Beach Makonde 2BR','Mbezi Beach',2,76000,-6.7211,39.2249,['Sea breeze','Fenced','Parking'],22,2,IMG('photo-1600596542815-ffad4c1539a9'),1],
+  ['Ilala Bungoni Single Room','Ilala',1,64000,-6.8262,39.2624,['Near Kariakoo','Luku meter'],32,0,IMG('photo-1554995207-c18c203602cb'),0],
+  ['Kigamboni Ferry-side 2BR','Kigamboni',2,71000,-6.8323,39.3060,['Quiet street','Big rooms'],12,3,IMG('photo-1570129477492-45c003edd2be'),0],
+  ['Manzese Argentina Single','Manzese',1,60000,-6.7973,39.2320,['Budget friendly','Near daladala'],36,1,IMG('photo-1484154218962-a197022b5858'),0],
+  ['Kijitonyama Sayansi Studio','Kijitonyama',1,66000,-6.7735,39.2320,['Self-contained','Near COSTECH'],25,1,IMG('photo-1493809842364-78817add7ffb'),1],
 ];
 
 const seedViewings = [
@@ -83,12 +105,12 @@ if (count === 0) {
   const insLL = db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)');
   DEMO_LANDLORDS.forEach(l => insLL.run(l.name, l.phone));
 
-  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url)
-                          VALUES (?,?,?,?,?,?,?,?,?,?,?)`);
+  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master)
+                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
   const ids = [];
   const tx = db.transaction(rows => rows.forEach(r => {
     const ll = DEMO_LANDLORDS[r[8]];
-    const info = ins.run(r[0],r[1],r[2],r[3],r[4],r[5],JSON.stringify(r[6]),r[7],ll.name,ll.phone,r[9]);
+    const info = ins.run(r[0],r[1],r[2],r[3],r[4],r[5],JSON.stringify(r[6]),r[7],ll.name,ll.phone,r[9],r[10]);
     ids.push(info.lastInsertRowid);
   }));
   tx(seedListings);

@@ -4,6 +4,10 @@ A full working rental website for 1- and 2-bedroom houses in Dar es Salaam, with
 
 - **Location search** — filter rooms by neighbourhood (Sinza, Mikocheni, Tabata…)
 - **Student-friendly rents** — every listing is between 60,000 and 80,000 TZS per month
+- **Master bedroom filter** — rooms whose main bedroom has its own bathroom carry a "Master bedroom" badge, and one tap narrows the list to just those
+- **Admin panel** at `/admin` — every viewing request from every landlord in one table, with statuses (pending / contacted / closed) and a chat inbox
+- **Live chat** — visitors chat with the office from a widget on the rooms page; the admin replies from the panel and both sides poll every few seconds
+- **Call buttons** — tap to dial the landlord, the visitor or the office. Enabled only when the site is served locally, so the public demo never rings anyone's phone
 - **Recommendation engine** — pick your university (UDSM, Ardhi, MUHAS, DIT, IFM…) or workplace (Kariakoo, Posta, Mlimani City…) and rooms are ranked nearest first, with distance in km and a daladala commute estimate
 - **Real database (SQLite)** — listings and viewing requests are saved permanently
 - **Landlord tools** — post a house from the "List your house" form; check who wants to view it under "Landlord requests" using your phone number
@@ -36,6 +40,27 @@ node server.js
 
 Then open **http://localhost:3000** in your browser. That's it — the database file (`nyumbani.db`) is created and seeded automatically the first time.
 
+## Admin panel
+
+Open **http://localhost:3000/admin**. The development key is `utu-admin`.
+
+**Set your own key before putting this online.** Anyone with the key can read every
+visitor's name and phone number:
+
+```bash
+ADMIN_KEY=something-only-you-know node server.js
+```
+
+On Render, add `ADMIN_KEY` under **Environment**. The panel shows a warning banner
+while the default key is still in use.
+
+## Calling
+
+Call buttons dial through the device's own phone app (a `tel:` link). The server only
+enables them when the site is being served from `localhost` or a private network
+address, so on the public demo the buttons appear greyed out with an explanation. The
+check lives in `callsEnabled()` in `server.js`.
+
 ## Put it on the internet (free)
 
 The easiest options — no credit card needed:
@@ -54,15 +79,30 @@ Note: on free hosting tiers the SQLite file may reset when the server restarts. 
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/api/listings?beds=1&maxPrice=70000&q=sinza&lat=..&lng=..&sort=near` | Search + distance ranking |
+| GET | `/api/listings?beds=1&maxPrice=70000&master=1&q=sinza&lat=..&lng=..&sort=near` | Search + distance ranking |
 | POST | `/api/listings` | Publish a listing (1 or 2 bedrooms only) |
 | POST | `/api/viewings` | Send a viewing request |
 | GET | `/api/viewings?phone=0754...` | Landlord: see requests for your listings |
 | GET | `/api/anchors` | Universities and workplaces |
 | GET | `/api/areas` | Known neighbourhoods (for accurate distances) |
+| GET | `/api/config` | Whether calling is enabled for this request |
+| POST | `/api/chat/start` | Visitor opens a chat, returns a session id |
+| GET/POST | `/api/chat/:sid` | Read the thread / send a message |
+
+Admin routes need the key, sent as an `x-admin-key` header:
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/admin/login` | Check a key |
+| GET | `/api/admin/summary` | Counts for the dashboard tiles |
+| GET | `/api/admin/viewings` | Every viewing request, all landlords |
+| PATCH | `/api/admin/viewings/:id` | Set status to pending / contacted / closed |
+| GET | `/api/admin/chats` | Chat threads with their latest message |
+| GET/POST | `/api/admin/chats/:sid` | Read a thread / reply to it |
 
 ## Files
 
 - `server.js` — Express web server + REST API
 - `db.js` — SQLite schema + seed data (14 sample listings)
-- `public/index.html` — the whole frontend (orange & white design)
+- `public/index.html` — the tenant-facing site (orange & white design)
+- `public/admin.html` — the admin panel: viewing requests + chat inbox
