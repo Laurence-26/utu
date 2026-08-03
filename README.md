@@ -5,6 +5,7 @@ A full working rental website for 1- and 2-bedroom houses in Dar es Salaam, with
 - **Location search** — filter rooms by neighbourhood (Sinza, Mikocheni, Tabata…)
 - **Student-friendly rents** — every listing is between 60,000 and 80,000 TZS per month
 - **Master bedroom filter** — rooms whose main bedroom has its own bathroom carry a "Master bedroom" badge, and one tap narrows the list to just those
+- **A page per room** — click any card for a photo gallery (the room, the building, the street outside), a written description, the full details, and the distance and commute time to every campus and workplace on the list
 - **Admin panel** at `/admin` — every viewing request from every landlord in one table, with statuses (pending / contacted / closed), a chat inbox, and a **Rooms tab for posting listings straight onto the public site**
 - **Live chat** — visitors chat with the office from a widget on the rooms page; the admin replies from the panel and both sides poll every few seconds
 - **Call buttons** — tap to dial the landlord, the visitor or the office. Enabled only when the site is served locally, so the public demo never rings anyone's phone
@@ -80,6 +81,7 @@ Note: on free hosting tiers the SQLite file may reset when the server restarts. 
 | Method | Endpoint | Purpose |
 |---|---|---|
 | GET | `/api/listings?beds=1&maxPrice=70000&master=1&q=sinza&lat=..&lng=..&sort=near` | Search + distance ranking |
+| GET | `/api/listings/:id` | One room: details, gallery, distance to every anchor |
 | POST | `/api/listings` | Publish a listing (1 or 2 bedrooms only) |
 | POST | `/api/viewings` | Send a viewing request |
 | GET | `/api/viewings?phone=0754...` | Landlord: see requests for your listings |
@@ -107,4 +109,5 @@ Admin routes need the key, sent as an `x-admin-key` header:
 - `server.js` — Express web server + REST API
 - `db.js` — SQLite schema + seed data (14 sample listings)
 - `public/index.html` — the tenant-facing site (orange & white design)
-- `public/admin.html` — the admin panel: viewing requests + chat inbox
+- `public/room.html` — a single room's page: gallery, details, commute distances
+- `public/admin.html` — the admin panel: viewing requests, chat inbox, post a room

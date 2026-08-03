@@ -26,6 +26,7 @@ function callsEnabled(req){
 app.get('/api/config', (req, res) => res.json({ callsEnabled: callsEnabled(req) }));
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/room', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'room.html')));
 
 /* ---------- Anchors: universities & workplaces ---------- */
 const ANCHORS = {
@@ -105,6 +106,25 @@ app.get('/api/listings', (req, res) => {
   res.json(rows);
 });
 
+// GET /api/listings/:id — everything the room's own page needs
+app.get('/api/listings/:id', (req, res) => {
+  const row = db.prepare('SELECT * FROM listings WHERE id=?').get(+req.params.id);
+  if (!row) return res.status(404).json({ error: 'Room not found.' });
+
+  const listing = { ...row, tags: JSON.parse(row.tags || '[]'), master: !!row.master };
+  const photos = db.prepare('SELECT url, caption FROM listing_photos WHERE listing_id=? ORDER BY position, id')
+    .all(listing.id);
+
+  // Distance to every campus and workplace, nearest first, so a tenant can see
+  // at a glance whether this room works for where their day actually happens.
+  const distances = [...ANCHORS.uni.map(a => ({ ...a, kind: 'uni' })),
+                     ...ANCHORS.work.map(a => ({ ...a, kind: 'work' }))]
+    .map(a => ({ id: a.id, name: a.name, kind: a.kind, km: +haversine(a, listing).toFixed(2) }))
+    .sort((a, b) => a.km - b.km);
+
+  res.json({ listing, photos, distances });
+});
+
 // POST /api/listings  — landlord posts a house
 const FALLBACK_PHOTOS = [
   'photo-1554995207-c18c203602cb','photo-1536376072261-38c75010e6c9','photo-1522708323590-d24dbb6b0267',
@@ -114,7 +134,8 @@ const FALLBACK_PHOTOS = [
 /* Shared by the public "List your house" form and the admin panel.
    Returns { error } for a bad submission, or { id } once it is live. */
 function createListing(body){
-  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master } = body || {};
+  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master,
+          description, photos } = body || {};
   if (!name || !area || !beds || !price || !landlord_name || !landlord_phone)
     return { error: 'name, area, beds, price, landlord_name and landlord_phone are required.' };
   if (![1, 2].includes(+beds))
@@ -137,10 +158,19 @@ function createListing(body){
   const llName = String(landlord_name).trim(), llPhone = String(landlord_phone).trim();
   db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)').run(llName, llPhone);
 
-  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master)
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(String(name).trim(), String(area).trim(), +beds, +price, lat, lng,
-         JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo, master ? 1 : 0);
+         JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo, master ? 1 : 0,
+         String(description || '').trim() || null);
+
+  // Extra gallery photos, one link per line or comma-separated
+  const extra = (Array.isArray(photos) ? photos : String(photos || '').split(/[\n,]/))
+    .map(p => String(p).trim()).filter(p => /^https?:\/\//i.test(p)).slice(0, 8);
+  if (extra.length){
+    const insP = db.prepare('INSERT INTO listing_photos (listing_id,url,caption,position) VALUES (?,?,?,?)');
+    extra.forEach((url, i) => insP.run(info.lastInsertRowid, url, null, i));
+  }
 
   return { id: info.lastInsertRowid };
 }
@@ -265,6 +295,7 @@ app.delete('/api/admin/listings/:id', requireAdmin, (req, res) => {
   const pending = db.prepare('SELECT COUNT(*) n FROM viewings WHERE listing_id=?').get(id).n;
   if (pending) return res.status(409).json({
     error: `That room has ${pending} viewing request${pending === 1 ? '' : 's'} attached. Close those first.` });
+  db.prepare('DELETE FROM listing_photos WHERE listing_id=?').run(id);
   const info = db.prepare('DELETE FROM listings WHERE id=?').run(id);
   if (!info.changes) return res.status(404).json({ error: 'Room not found.' });
   res.json({ ok: true });

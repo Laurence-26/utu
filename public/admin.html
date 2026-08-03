@@ -128,7 +128,8 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .postbox .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .field{margin-bottom:13px}
 .field label{display:block;font-weight:600;font-size:.85rem;margin-bottom:5px}
-.field input,.field select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;background:var(--cream)}
+.field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;background:var(--cream)}
+.field textarea{resize:vertical;min-height:66px;font-size:.92rem;line-height:1.5}
 .field .note{font-size:.76rem;color:var(--muted);margin-top:4px}
 .field label.check{display:flex;align-items:center;gap:9px;font-weight:600;font-size:.88rem;cursor:pointer}
 .field label.check input{width:17px;height:17px;accent-color:var(--orange)}
@@ -281,8 +282,12 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
         </div>
         <div class="field"><label for="pTags">Features (comma-separated)</label>
           <input id="pTags" placeholder="Self-contained, Water tank, Parking"></div>
-        <div class="field"><label for="pPhoto">Photo link (optional)</label>
+        <div class="field"><label for="pDesc">Description</label>
+          <textarea id="pDesc" placeholder="What a tenant should know before travelling to see it"></textarea></div>
+        <div class="field"><label for="pPhoto">Main photo link (optional)</label>
           <input id="pPhoto" placeholder="https://… link to a photo"></div>
+        <div class="field"><label for="pGallery">More photos (one link per line)</label>
+          <textarea id="pGallery" placeholder="https://… the room&#10;https://… the street outside"></textarea></div>
         <div class="two">
           <div class="field"><label for="pLandlord">Landlord name</label>
             <input id="pLandlord" placeholder="e.g. Mama Neema Kessy" required></div>
@@ -410,7 +415,9 @@ async function submitPost(e){
     master: $('pMaster').checked,
     price: +$('pPrice').value,
     tags: $('pTags').value,
+    description: $('pDesc').value.trim(),
     photo_url: $('pPhoto').value.trim(),
+    photos: $('pGallery').value,
     landlord_name: $('pLandlord').value.trim(),
     landlord_phone: $('pPhone').value.trim()
   };
@@ -433,7 +440,7 @@ async function submitPost(e){
 }
 
 function clearPostForm(){
-  ['pName','pArea','pPrice','pTags','pPhoto','pLandlord','pPhone'].forEach(id=>$(id).value='');
+  ['pName','pArea','pPrice','pTags','pDesc','pPhoto','pGallery','pLandlord','pPhone'].forEach(id=>$(id).value='');
   $('pMaster').checked = false;
   $('pBeds').value = '1';
   $('postMsg').className = 'form-msg';

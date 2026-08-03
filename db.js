@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS listings (
   landlord_phone TEXT,
   hue INTEGER DEFAULT 24,
   master INTEGER DEFAULT 0,
+  description TEXT,
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -53,13 +54,25 @@ CREATE TABLE IF NOT EXISTS messages (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+-- Extra photos shown on a room's own page: the rooms inside plus the
+-- street and surroundings, so a tenant knows the area before travelling.
+CREATE TABLE IF NOT EXISTS listing_photos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  caption TEXT,
+  position INTEGER DEFAULT 0
+);
+
 CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id, id);
+CREATE INDEX IF NOT EXISTS idx_photos_listing ON listing_photos(listing_id, position);
 `);
 
 // Migrations for databases created before these columns existed
 const cols = db.prepare(`PRAGMA table_info(listings)`).all().map(c => c.name);
 if (!cols.includes('photo_url')) db.exec(`ALTER TABLE listings ADD COLUMN photo_url TEXT`);
 if (!cols.includes('master'))    db.exec(`ALTER TABLE listings ADD COLUMN master INTEGER DEFAULT 0`);
+if (!cols.includes('description')) db.exec(`ALTER TABLE listings ADD COLUMN description TEXT`);
 
 /* ---------------- Demo landlords ---------------- */
 const DEMO_LANDLORDS = [
@@ -91,6 +104,48 @@ const seedListings = [
   ['Kijitonyama Sayansi Studio','Kijitonyama',1,66000,-6.7735,39.2320,['Self-contained','Near COSTECH'],25,1,IMG('photo-1493809842364-78817add7ffb'),1],
 ];
 
+/* Written for the room's own page — what a tenant wants to know before
+   spending fare to come and look. Indexed to match seedListings above. */
+const seedDescriptions = [
+  'A self-contained single in the Palestina part of Sinza, on a quiet inner street about four minutes from the main road. The room takes a three-quarter bed with space left over for a desk. Water comes from a 1,000-litre tank on the roof, so the twice-weekly cuts are not felt here. Electricity is on a Luku prepaid meter you top up yourself.',
+  'A two-bedroom garden flat in Mikocheni B, behind a fenced compound shared with two other tenants. The main bedroom is en-suite. Floors are tiled throughout, and the kitchen has fitted counters. There is off-street parking for one car and the gate is locked at night.',
+  'A single room a short walk from the Ubungo daladala stand — useful if you commute daily and want to be on the road quickly. The compound is shared and fenced, with a common washing area at the back. The room is unfurnished and freshly painted.',
+  'Two rooms in a Kijitonyama house, with the main bedroom en-suite and its own kitchen inside rather than a shared one. Ceiling fans in both rooms make a real difference in the hot months. The street is residential and quiet after dark.',
+  'A single room minutes from the Mwenge stand and the Makumbusho junction, so buses in every direction are close. Water runs 24/7 from the mains here, which is uncommon in this pocket. Good for a student at Ardhi or UDSM who does not want a long commute.',
+  'A family house in Tabata Segerea with a large compound — space for children to play, and room to dry washing properly. Water is from a private bore-hole, so supply is steady year-round. The main bedroom is en-suite; the second is a good size.',
+  'A single in Upanga within walking distance of Muhimbili, which makes it a favourite with MUHAS students and hospital staff. Tiled, self-contained, behind a secure gate with a guard at night. Quiet street lined with old trees.',
+  'A modern two-bedroom in Bonde la Mpunga, Msasani. Finished to a higher standard than most at this rent: fitted kitchen, en-suite main bedroom, standby water tank and parking inside the gate. Close to the Msasani offices and the peninsula shops.',
+  'A single room in Mkwajuni, Kinondoni, close to the main road so transport is never a problem. Shared veranda at the front where tenants sit in the evening. Straightforward, well-kept, and among the cheaper rooms this near the centre.',
+  'A two-bedroom in Makonde, Mbezi Beach, close enough to the water to catch the sea breeze in the afternoon. Fenced compound with parking. Suits someone working in Masaki or along the peninsula who wants more space than the centre allows.',
+  'A single room in Bungoni, Ilala — about ten minutes on foot from Kariakoo market, so shopping and transport are on your doorstep. Luku prepaid meter. Busy during the day, which suits some people and not others.',
+  'A two-bedroom on the Kigamboni side, a short walk from the ferry. Both rooms are unusually large. The street is quiet, and the pace on this side of the creek is slower than the city centre while still being twenty minutes from Posta.',
+  'The cheapest room on Utu, in Argentina, Manzese. Basic and honest: one room, shared facilities, right by the daladala route into town. If the budget is the deciding factor, this is the one to look at first.',
+  'A self-contained studio in the Sayansi area of Kijitonyama, close to COSTECH and an easy hop to UDSM. Bathroom inside the room. Popular with postgraduate students, so it does not stay empty long.',
+];
+
+/* Each room gets its own gallery: the room, a bedroom, the building, and the
+   street outside — the last one matters most to someone who has not been there. */
+const GALLERY_POOLS = {
+  room:   ['photo-1522708323590-d24dbb6b0267','photo-1505693416388-ac5ce068fe85','photo-1540518614846-7eded433c457',
+           'photo-1493809842364-78817add7ffb','photo-1536376072261-38c75010e6c9','photo-1554995207-c18c203602cb'],
+  bed:    ['photo-1560448204-e02f11c3d0e2','photo-1522771739844-6a9f6d5f14af','photo-1505691938895-1758d7feb511',
+           'photo-1595526114035-0d45ed16cfbf','photo-1616594039964-ae9021a400a0'],
+  house:  ['photo-1568605114967-8130f3a36994','photo-1570129477492-45c003edd2be','photo-1512917774080-9991f1c4c750',
+           'photo-1600585154340-be6161a56a0c','photo-1449844908441-8829872d2607'],
+  street: ['photo-1449824913935-59a10b8d2000','photo-1502920917128-1aa500764cbd','photo-1519501025264-65ba15a82390',
+           'photo-1477959858617-67f85cf4f1df','photo-1444723121867-7a241cacace9'],
+};
+
+function galleryFor(index, area){
+  const pick = (pool, offset) => GALLERY_POOLS[pool][(index + offset) % GALLERY_POOLS[pool].length];
+  return [
+    { url: IMG(pick('room', 0)),   caption: 'The room' },
+    { url: IMG(pick('bed', 1)),    caption: 'Sleeping area' },
+    { url: IMG(pick('house', 2)),  caption: 'The building' },
+    { url: IMG(pick('street', 3)), caption: `The street in ${area}` },
+  ];
+}
+
 const seedViewings = [
   // listing index (0-based), visitor, phone, message
   [0, 'Amos', '0686860396', 'Naomba kuja Jumamosi asubuhi - I am a UDSM student.'],
@@ -105,20 +160,41 @@ if (count === 0) {
   const insLL = db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)');
   DEMO_LANDLORDS.forEach(l => insLL.run(l.name, l.phone));
 
-  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master)
-                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description)
+                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const insP = db.prepare(`INSERT INTO listing_photos (listing_id,url,caption,position) VALUES (?,?,?,?)`);
   const ids = [];
-  const tx = db.transaction(rows => rows.forEach(r => {
+  const tx = db.transaction(rows => rows.forEach((r, i) => {
     const ll = DEMO_LANDLORDS[r[8]];
-    const info = ins.run(r[0],r[1],r[2],r[3],r[4],r[5],JSON.stringify(r[6]),r[7],ll.name,ll.phone,r[9],r[10]);
+    const info = ins.run(r[0],r[1],r[2],r[3],r[4],r[5],JSON.stringify(r[6]),r[7],ll.name,ll.phone,r[9],r[10],
+                         seedDescriptions[i] || null);
     ids.push(info.lastInsertRowid);
+    galleryFor(i, r[1]).forEach((p, n) => insP.run(info.lastInsertRowid, p.url, p.caption, n));
   }));
   tx(seedListings);
 
   const insV = db.prepare(`INSERT INTO viewings (listing_id,visitor_name,visitor_phone,message) VALUES (?,?,?,?)`);
   seedViewings.forEach(v => insV.run(ids[v[0]], v[1], v[2], v[3]));
 
-  console.log(`Seeded ${seedListings.length} listings, ${DEMO_LANDLORDS.length} demo landlords, ${seedViewings.length} viewing requests`);
+  console.log(`Seeded ${seedListings.length} listings with galleries, ${DEMO_LANDLORDS.length} demo landlords, ${seedViewings.length} viewing requests`);
+}
+
+/* Databases created before room pages existed still hold the original 14
+   listings but no galleries. Give them their photos and descriptions once. */
+if (db.prepare('SELECT COUNT(*) AS n FROM listing_photos').get().n === 0) {
+  const insP = db.prepare(`INSERT INTO listing_photos (listing_id,url,caption,position) VALUES (?,?,?,?)`);
+  const find = db.prepare('SELECT id, area FROM listings WHERE name=?');
+  const setDesc = db.prepare(`UPDATE listings SET description=? WHERE id=? AND (description IS NULL OR description='')`);
+  let n = 0;
+  const tx = db.transaction(() => seedListings.forEach((r, i) => {
+    const row = find.get(r[0]);
+    if (!row) return;
+    setDesc.run(seedDescriptions[i] || null, row.id);
+    galleryFor(i, row.area).forEach((p, pos) => insP.run(row.id, p.url, p.caption, pos));
+    n++;
+  }));
+  tx();
+  if (n) console.log(`Backfilled galleries and descriptions for ${n} existing listings`);
 }
 
 module.exports = db;

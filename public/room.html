@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room — Utu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FFFFFF; --cream:#FFF6EF;
+  --orange:#F05A0E; --orange-deep:#C74108;
+  --amber:#FFB25E; --amber-soft:#FFE3C7;
+  --ink:#241610; --muted:#93796B; --line:#F3E3D6;
+  --radius:18px; --shadow:0 10px 30px rgba(36,22,16,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+html{scroll-behavior:smooth}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:var(--white);color:var(--ink);line-height:1.55;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Bricolage Grotesque','Instrument Sans',sans-serif}
+button{font-family:inherit;cursor:pointer}
+input,textarea{font-family:inherit;font-size:1rem;color:var(--ink)}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:6px}
+img{max-width:100%;display:block}
+
+.nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;
+  padding:14px clamp(16px,5vw,56px);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.35rem;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.logo span{color:var(--orange)}
+.btn{background:var(--orange);color:#fff;border:none;border-radius:999px;padding:10px 22px;font-weight:600;font-size:.95rem;
+  transition:background .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{background:var(--orange-deep);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--orange);border:1.5px solid var(--orange)}
+.btn.ghost:hover{background:var(--amber-soft)}
+.btn:disabled{opacity:.6;cursor:wait;transform:none}
+
+.wrap{max-width:1120px;margin:0 auto;padding:clamp(18px,4vw,34px) clamp(16px,5vw,56px) 80px}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.9rem;margin-bottom:18px}
+.back:hover{color:var(--orange)}
+
+.head{display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.head h1{font-size:clamp(1.6rem,3.6vw,2.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.12;text-wrap:balance}
+.head .loc{color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.95rem}
+.head .price{text-align:right;white-space:nowrap}
+.head .price strong{font-family:'Bricolage Grotesque';font-size:1.7rem;font-weight:800;color:var(--orange);
+  letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.head .price span{display:block;font-size:.78rem;color:var(--muted)}
+
+/* ---------- Gallery ---------- */
+.gallery{margin-bottom:14px}
+.stage{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--amber-soft);aspect-ratio:16/9}
+.stage img{width:100%;height:100%;object-fit:cover}
+.stage figcaption{position:absolute;left:14px;bottom:14px;background:rgba(36,22,16,.82);color:#fff;
+  border-radius:999px;padding:6px 15px;font-size:.82rem;font-weight:600}
+.stage .counter{position:absolute;right:14px;bottom:14px;background:rgba(255,255,255,.94);
+  border-radius:999px;padding:6px 13px;font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.stage .arrow{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(255,255,255,.94);
+  width:42px;height:42px;border-radius:50%;display:grid;place-items:center;box-shadow:var(--shadow)}
+.stage .arrow:hover{background:#fff}
+.stage .arrow.prev{left:12px}
+.stage .arrow.next{right:12px}
+.thumbs{display:flex;gap:10px;margin-top:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.thumbs button{flex:0 0 auto;width:104px;aspect-ratio:4/3;border-radius:12px;overflow:hidden;border:2.5px solid transparent;
+  background:var(--cream);padding:0}
+.thumbs button.on{border-color:var(--orange)}
+.thumbs img{width:100%;height:100%;object-fit:cover}
+
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--cream);border:1px solid var(--line);
+  border-radius:999px;padding:6px 14px;font-size:.85rem;font-weight:600;color:var(--ink)}
+.badge.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+.cols{display:grid;grid-template-columns:1fr 340px;gap:30px;align-items:start}
+section.block{margin-bottom:30px}
+section.block h2{font-size:1.18rem;font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
+.about p{color:#4A3427;font-size:1.02rem}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fact{border:1.5px solid var(--line);border-radius:14px;padding:13px 15px}
+.fact b{display:block;font-family:'Bricolage Grotesque';font-size:1.05rem;font-weight:800}
+.fact span{font-size:.78rem;color:var(--muted);font-weight:600}
+.features{display:flex;flex-wrap:wrap;gap:8px}
+.feature{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:.85rem;font-weight:600;color:var(--muted)}
+
+/* ---------- Distances ---------- */
+.dist-list{display:flex;flex-direction:column;gap:9px}
+.dist{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
+  border-bottom:1px dashed var(--line);padding-bottom:9px}
+.dist:last-child{border-bottom:none}
+.dist .nm{font-size:.92rem}
+.dist .nm small{display:block;color:var(--muted);font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.dist .km{font-weight:800;font-variant-numeric:tabular-nums;font-family:'Bricolage Grotesque'}
+.dist .mins{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.dist.near .km{color:var(--orange)}
+.more-dist{background:none;border:none;color:var(--orange);font-weight:700;font-size:.88rem;padding:8px 0}
+
+/* ---------- Sidebar ---------- */
+.side{position:sticky;top:86px;display:flex;flex-direction:column;gap:14px}
+.card{border:1.5px solid var(--line);border-radius:var(--radius);padding:20px;background:var(--white);box-shadow:var(--shadow)}
+.card h3{font-size:1.02rem;font-weight:800;margin-bottom:12px}
+.ll{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+.ll .avatar{width:42px;height:42px;border-radius:50%;background:var(--amber-soft);color:var(--orange-deep);
+  display:grid;place-items:center;font-weight:800;font-family:'Bricolage Grotesque';flex:none}
+.ll b{display:block;font-size:.95rem}
+.ll span{color:var(--muted);font-size:.84rem;font-variant-numeric:tabular-nums}
+.side .btn{width:100%;justify-content:center}
+.call-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:10px 18px;
+  font-size:.9rem;font-weight:700;text-decoration:none;margin-top:9px}
+.call-btn:hover{border-color:var(--orange);color:var(--orange)}
+.call-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;border-style:dashed}
+.call-btn[aria-disabled="true"]:hover{border-color:var(--line);color:var(--ink)}
+
+/* ---------- Modal ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(36,22,16,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-back.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:26px;box-shadow:var(--shadow)}
+.modal h3{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.modal .sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-weight:600;font-size:.86rem;margin-bottom:5px}
+.field input,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--cream)}
+.field textarea{resize:vertical;min-height:70px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.form-msg{border-radius:12px;padding:10px 14px;font-size:.88rem;font-weight:600;margin-top:12px;display:none}
+.form-msg.err{display:block;background:#FDEBEB;color:#A82A2A}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;
+  padding:12px 22px;border-radius:999px;font-weight:600;font-size:.92rem;opacity:0;transition:all .3s;z-index:200;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.state{padding:80px 20px;text-align:center;color:var(--muted)}
+.state h2{font-size:1.3rem;color:var(--ink);margin-bottom:8px}
+.state .btn{margin-top:18px}
+
+@media (max-width:900px){
+  .cols{grid-template-columns:1fr;gap:22px}
+  .side{position:static;order:-1}
+}
+@media (max-width:560px){
+  .head .price{text-align:left}
+  .stage .arrow{width:36px;height:36px}
+  .thumbs button{width:84px}
+  .modal-actions{flex-wrap:wrap}
+  .modal-actions .btn{flex:1 1 auto;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} html{scroll-behavior:auto} }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="logo" href="/">U<span>tu.</span></a>
+  <a class="btn ghost" href="/#rooms">All rooms</a>
+</nav>
+
+<div class="state" id="loading">Loading room…</div>
+
+<div class="state" id="missing" hidden>
+  <h2>That room is not here</h2>
+  <p>It may have been taken off the site.</p>
+  <a class="btn" href="/#rooms">Browse all rooms</a>
+</div>
+
+<div class="wrap" id="content" hidden>
+  <a class="back" href="/#rooms">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to all rooms
+  </a>
+
+  <div class="head">
+    <div>
+      <h1 id="rName"></h1>
+      <div class="loc">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-7-5.2-7-11a7 7 0 1 1 14 0c0 5.8-7 11-7 11z" stroke="currentColor" stroke-width="2.2"/></svg>
+        <span id="rArea"></span>
+      </div>
+    </div>
+    <div class="price"><strong id="rPrice"></strong><span>per month</span></div>
+  </div>
+
+  <div class="gallery">
+    <figure class="stage">
+      <img id="stageImg" alt="">
+      <figcaption id="stageCap"></figcaption>
+      <span class="counter" id="stageCount"></span>
+      <button class="arrow prev" id="prevBtn" aria-label="Previous photo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="arrow next" id="nextBtn" aria-label="Next photo">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </figure>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <div class="badges" id="badges"></div>
+
+  <div class="cols">
+    <div>
+      <section class="block about" id="aboutBlock">
+        <h2>About this room</h2>
+        <p id="rDesc"></p>
+      </section>
+
+      <section class="block">
+        <h2>The details</h2>
+        <div class="facts" id="facts"></div>
+      </section>
+
+      <section class="block" id="featureBlock">
+        <h2>What it comes with</h2>
+        <div class="features" id="features"></div>
+      </section>
+
+      <section class="block">
+        <h2>How far from your day</h2>
+        <div class="dist-list" id="dists"></div>
+        <button class="more-dist" id="moreDist">Show all places</button>
+      </section>
+    </div>
+
+    <aside class="side">
+      <div class="card">
+        <h3>Landlord</h3>
+        <div class="ll">
+          <span class="avatar" id="llAvatar"></span>
+          <div><b id="llName"></b><span id="llPhone"></span></div>
+        </div>
+        <button class="btn" id="reqBtn">Request a viewing</button>
+        <a class="call-btn" id="callBtn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5c0-.6.4-1 1-1h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 13l5 2v3c0 .6-.4 1-1 1A14 14 0 0 1 4 5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Call landlord
+        </a>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="modal-back" id="viewModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="viewTitle">
+    <h3 id="viewTitle">Request a viewing</h3>
+    <p class="sub" id="viewSub"></p>
+    <div class="field"><label for="vName">Your name</label><input id="vName" placeholder="e.g. Amos"></div>
+    <div class="field"><label for="vPhone">Phone number</label><input id="vPhone" placeholder="e.g. 0686860396"></div>
+    <div class="field"><label for="vMsg">Message (optional)</label><textarea id="vMsg" placeholder="When would you like to visit?"></textarea></div>
+    <div class="form-msg" id="viewMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <button class="btn" id="viewSubmit">Send request</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const tzs = n => Number(n).toLocaleString('en-US');
+const commuteMins = km => Math.max(5, Math.round(km / 14 * 60));
+
+const ID = +new URLSearchParams(location.search).get('id');
+let listing = null, photos = [], distances = [], shot = 0, showAllDist = false, CALLS_ENABLED = false;
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+/* A hue-tinted house drawing, used when a photo link fails to load. */
+function fallbackSVG(hue){
+  const h = hue || 24;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+    <rect width="320" height="200" fill="hsl(${h} 95% 96%)"/>
+    <circle cx="272" cy="34" r="46" fill="hsl(${h+10} 92% 82%)"/>
+    <rect x="0" y="150" width="320" height="50" fill="hsl(${h} 70% 88%)"/>
+    <rect x="86" y="96" width="128" height="62" rx="4" fill="#fff" stroke="hsl(${h} 70% 45%)" stroke-width="3"/>
+    <path d="M78 100 L150 58 L222 100" fill="hsl(${h} 88% 55%)" stroke="hsl(${h} 75% 40%)" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="138" y="120" width="26" height="38" rx="2" fill="hsl(${h} 88% 55%)"/>
+    <rect x="100" y="112" width="22" height="20" rx="2" fill="hsl(${h+10} 92% 82%)" stroke="hsl(${h} 70% 45%)" stroke-width="2"/>
+    <rect x="180" y="112" width="22" height="20" rx="2" fill="hsl(${h+10} 92% 82%)" stroke="hsl(${h} 70% 45%)" stroke-width="2"/>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function showShot(i){
+  if (!photos.length) return;
+  shot = (i + photos.length) % photos.length;
+  const p = photos[shot];
+  $('stageImg').src = p.url;
+  $('stageImg').alt = p.caption || listing.name;
+  $('stageCap').textContent = p.caption || '';
+  $('stageCap').hidden = !p.caption;
+  $('stageCount').textContent = `${shot + 1} / ${photos.length}`;
+  document.querySelectorAll('.thumbs button').forEach((b, n) => b.classList.toggle('on', n === shot));
+}
+
+function renderDistances(){
+  const rows = showAllDist ? distances : distances.slice(0, 4);
+  $('dists').innerHTML = rows.map((d, i) => `
+    <div class="dist ${i === 0 ? 'near' : ''}">
+      <span class="nm">${esc(d.name)}<small>${d.kind === 'uni' ? 'Campus' : 'Workplace'}</small></span>
+      <span class="km">${d.km.toFixed(1)} km</span>
+      <span class="mins">≈ ${commuteMins(d.km)} min</span>
+    </div>`).join('');
+  $('moreDist').textContent = showAllDist ? 'Show fewer' : `Show all ${distances.length} places`;
+}
+
+function applyCallState(){
+  const a = $('callBtn'), phone = listing && listing.landlord_phone;
+  if (CALLS_ENABLED && phone){
+    a.href = 'tel:' + phone.replace(/\s+/g,'');
+    a.removeAttribute('aria-disabled');
+    a.title = 'Call ' + phone;
+  } else {
+    a.removeAttribute('href');
+    a.setAttribute('aria-disabled','true');
+    a.title = 'Calling only works when Utu is running on your own machine';
+  }
+}
+
+function render(){
+  document.title = `${listing.name} — Utu`;
+  $('rName').textContent = listing.name;
+  $('rArea').textContent = `${listing.area}, Dar es Salaam`;
+  $('rPrice').textContent = `${tzs(listing.price)} TZS`;
+
+  $('thumbs').innerHTML = photos.map((p, i) =>
+    `<button data-i="${i}" aria-label="Photo ${i + 1}"><img src="${esc(p.url)}" alt="" loading="lazy"></button>`).join('');
+  document.querySelectorAll('.thumbs img, #stageImg').forEach(img => {
+    img.addEventListener('error', () => { img.src = fallbackSVG(listing.hue); }, { once: true });
+  });
+  showShot(0);
+
+  $('badges').innerHTML = [
+    `<span class="badge">${listing.beds} bedroom${listing.beds > 1 ? 's' : ''}</span>`,
+    listing.master ? `<span class="badge dark">Master bedroom</span>` : '',
+    `<span class="badge">${esc(listing.area)}</span>`
+  ].join('');
+
+  $('aboutBlock').hidden = !listing.description;
+  $('rDesc').textContent = listing.description || '';
+
+  const nearest = distances[0];
+  $('facts').innerHTML = [
+    ['Monthly rent', `${tzs(listing.price)} TZS`],
+    ['Bedrooms', String(listing.beds)],
+    ['Master bedroom', listing.master ? 'Yes, en-suite' : 'No'],
+    ['Neighbourhood', listing.area],
+    ['Nearest anchor', nearest ? `${nearest.km.toFixed(1)} km` : '—'],
+    ['Listed', (listing.created_at || '').slice(0, 10)]
+  ].map(([label, val]) => `<div class="fact"><b>${esc(val)}</b><span>${esc(label)}</span></div>`).join('');
+
+  $('featureBlock').hidden = !(listing.tags || []).length;
+  $('features').innerHTML = (listing.tags || []).map(t => `<span class="feature">${esc(t)}</span>`).join('');
+
+  renderDistances();
+
+  const initials = (listing.landlord_name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  $('llAvatar').textContent = initials;
+  $('llName').textContent = listing.landlord_name || 'Landlord';
+  $('llPhone').textContent = listing.landlord_phone || '';
+  applyCallState();
+
+  $('loading').hidden = true;
+  $('content').hidden = false;
+}
+
+/* ---------- Viewing request ---------- */
+function openViewing(){
+  $('viewSub').textContent = listing.name;
+  $('vName').value = ''; $('vPhone').value = ''; $('vMsg').value = '';
+  $('viewMsg').className = 'form-msg';
+  $('viewModal').classList.add('open');
+}
+async function submitViewing(){
+  const msgBox = $('viewMsg'); msgBox.className = 'form-msg';
+  const body = {
+    listing_id: listing.id,
+    visitor_name: $('vName').value.trim(),
+    visitor_phone: $('vPhone').value.trim(),
+    message: $('vMsg').value.trim()
+  };
+  if (!body.visitor_name || !body.visitor_phone){
+    msgBox.textContent = 'Enter your name and phone number so the landlord can reach you.';
+    msgBox.className = 'form-msg err'; return;
+  }
+  $('viewSubmit').disabled = true;
+  try {
+    const res = await fetch('/api/viewings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    $('viewModal').classList.remove('open');
+    toast(data.message + ' The landlord will contact you.');
+  } catch (e) {
+    msgBox.textContent = e.message; msgBox.className = 'form-msg err';
+  } finally { $('viewSubmit').disabled = false; }
+}
+
+/* ---------- Wiring ---------- */
+$('prevBtn').addEventListener('click', ()=>showShot(shot - 1));
+$('nextBtn').addEventListener('click', ()=>showShot(shot + 1));
+$('thumbs').addEventListener('click', e=>{
+  const b = e.target.closest('[data-i]');
+  if (b) showShot(+b.dataset.i);
+});
+$('moreDist').addEventListener('click', ()=>{ showAllDist = !showAllDist; renderDistances(); });
+$('reqBtn').addEventListener('click', openViewing);
+$('cancelBtn').addEventListener('click', ()=>$('viewModal').classList.remove('open'));
+$('viewSubmit').addEventListener('click', submitViewing);
+$('viewModal').addEventListener('click', e=>{ if (e.target.id === 'viewModal') $('viewModal').classList.remove('open'); });
+$('callBtn').addEventListener('click', e=>{
+  if ($('callBtn').getAttribute('aria-disabled') === 'true'){
+    e.preventDefault();
+    toast('Calling is only available in the local app, not on the demo site.');
+  }
+});
+document.addEventListener('keydown', e=>{
+  if (e.key === 'Escape') $('viewModal').classList.remove('open');
+  if ($('viewModal').classList.contains('open') || $('content').hidden) return;
+  if (e.key === 'ArrowLeft') showShot(shot - 1);
+  if (e.key === 'ArrowRight') showShot(shot + 1);
+});
+
+(async function init(){
+  if (!ID){ $('loading').hidden = true; $('missing').hidden = false; return; }
+  try {
+    const [res, cfg] = await Promise.all([
+      fetch('/api/listings/' + ID),
+      fetch('/api/config').then(r=>r.json()).catch(()=>({}))
+    ]);
+    if (!res.ok){ $('loading').hidden = true; $('missing').hidden = false; return; }
+    const data = await res.json();
+    listing = data.listing;
+    distances = data.distances || [];
+    CALLS_ENABLED = !!cfg.callsEnabled;
+    photos = (data.photos || []).slice();
+    if (listing.photo_url) photos.unshift({ url: listing.photo_url, caption: 'Main photo' });
+    if (!photos.length) photos = [{ url: fallbackSVG(listing.hue), caption: '' }];
+    render();
+  } catch {
+    $('loading').hidden = true; $('missing').hidden = false;
+  }
+})();
+</script>
+</body>
+</html>
