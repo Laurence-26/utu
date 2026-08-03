@@ -111,14 +111,21 @@ const FALLBACK_PHOTOS = [
   'photo-1560448204-e02f11c3d0e2','photo-1502672260266-1c1ef2d93688','photo-1540518614846-7eded433c457',
 ].map(id => `https://images.unsplash.com/${id}?auto=format&fit=crop&w=800&q=60`);
 
-app.post('/api/listings', (req, res) => {
-  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master } = req.body || {};
+/* Shared by the public "List your house" form and the admin panel.
+   Returns { error } for a bad submission, or { id } once it is live. */
+function createListing(body){
+  const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master } = body || {};
   if (!name || !area || !beds || !price || !landlord_name || !landlord_phone)
-    return res.status(400).json({ error: 'name, area, beds, price, landlord_name and landlord_phone are required.' });
+    return { error: 'name, area, beds, price, landlord_name and landlord_phone are required.' };
   if (![1, 2].includes(+beds))
-    return res.status(400).json({ error: 'Only 1 or 2 bedroom houses are accepted.' });
+    return { error: 'Only 1 or 2 bedroom houses are accepted.' };
   if (+price < 10000)
-    return res.status(400).json({ error: 'Price looks too low — enter monthly rent in TZS.' });
+    return { error: 'Price looks too low — enter monthly rent in TZS.' };
+
+  let photo = String(photo_url || '').trim();
+  if (photo && !/^https?:\/\//i.test(photo))
+    return { error: 'Photo must be a full link starting with http:// or https://' };
+  if (!photo) photo = FALLBACK_PHOTOS[Math.floor(Math.random() * FALLBACK_PHOTOS.length)];
 
   const key = String(area).trim().toLowerCase();
   const [lat, lng] = AREA_COORDS[key] || [-6.8000, 39.2500]; // Dar centre fallback
@@ -126,11 +133,6 @@ app.post('/api/listings', (req, res) => {
   const tagList = Array.isArray(tags)
     ? tags
     : String(tags || '').split(',').map(t => t.trim()).filter(Boolean);
-
-  let photo = String(photo_url || '').trim();
-  if (photo && !/^https?:\/\//i.test(photo))
-    return res.status(400).json({ error: 'Photo must be a full link starting with http:// or https://' });
-  if (!photo) photo = FALLBACK_PHOTOS[Math.floor(Math.random() * FALLBACK_PHOTOS.length)];
 
   const llName = String(landlord_name).trim(), llPhone = String(landlord_phone).trim();
   db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)').run(llName, llPhone);
@@ -140,7 +142,13 @@ app.post('/api/listings', (req, res) => {
     .run(String(name).trim(), String(area).trim(), +beds, +price, lat, lng,
          JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo, master ? 1 : 0);
 
-  res.status(201).json({ id: info.lastInsertRowid, message: 'Listing published.' });
+  return { id: info.lastInsertRowid };
+}
+
+app.post('/api/listings', (req, res) => {
+  const out = createListing(req.body);
+  if (out.error) return res.status(400).json({ error: out.error });
+  res.status(201).json({ id: out.id, message: 'Listing published.' });
 });
 
 // POST /api/viewings — tenant requests a viewing
@@ -243,6 +251,23 @@ app.get('/api/admin/summary', requireAdmin, (req, res) => {
     callsEnabled: callsEnabled(req),
     usingDefaultKey: DEFAULT_KEY_IN_USE
   });
+});
+
+// Admin posts a room straight onto the public site
+app.post('/api/admin/listings', requireAdmin, (req, res) => {
+  const out = createListing(req.body);
+  if (out.error) return res.status(400).json({ error: out.error });
+  res.status(201).json({ id: out.id, message: 'Room posted — it is live on the site now.' });
+});
+
+app.delete('/api/admin/listings/:id', requireAdmin, (req, res) => {
+  const id = +req.params.id;
+  const pending = db.prepare('SELECT COUNT(*) n FROM viewings WHERE listing_id=?').get(id).n;
+  if (pending) return res.status(409).json({
+    error: `That room has ${pending} viewing request${pending === 1 ? '' : 's'} attached. Close those first.` });
+  const info = db.prepare('DELETE FROM listings WHERE id=?').run(id);
+  if (!info.changes) return res.status(404).json({ error: 'Room not found.' });
+  res.json({ ok: true });
 });
 
 app.get('/api/admin/chats', requireAdmin, (_req, res) => {

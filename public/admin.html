@@ -117,6 +117,31 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .call-btn[aria-disabled="true"]{opacity:.5;cursor:not-allowed;border-style:dashed}
 .call-btn[aria-disabled="true"]:hover{border-color:var(--line);color:var(--ink)}
 
+/* ---------- Post a room ---------- */
+.rooms-layout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:16px;align-items:start}
+/* narrower than the 820px default: this table shares the row with the form */
+.rooms-layout table{min-width:600px}
+.rooms-layout td:last-child{text-align:right;white-space:nowrap}
+.postbox{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:22px}
+.postbox h3{font-size:1.1rem;font-weight:800;letter-spacing:-.02em}
+.postbox .sub{color:var(--muted);font-size:.85rem;margin-bottom:16px}
+.postbox .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{margin-bottom:13px}
+.field label{display:block;font-weight:600;font-size:.85rem;margin-bottom:5px}
+.field input,.field select{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 13px;background:var(--cream)}
+.field .note{font-size:.76rem;color:var(--muted);margin-top:4px}
+.field label.check{display:flex;align-items:center;gap:9px;font-weight:600;font-size:.88rem;cursor:pointer}
+.field label.check input{width:17px;height:17px;accent-color:var(--orange)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.form-msg{border-radius:12px;padding:10px 14px;font-size:.86rem;font-weight:600;margin-top:12px;display:none}
+.form-msg.ok{display:block;background:var(--ok-bg);color:var(--ok)}
+.form-msg.err{display:block;background:#FDEBEB;color:#A82A2A}
+.room-name b{display:block}
+.room-name .mini-master{margin-left:0;margin-top:4px}
+.danger{border-color:#E5B4B4;color:#A82A2A}
+.danger:hover{background:#FDEBEB;border-color:#A82A2A}
+@media (max-width:900px){ .rooms-layout{grid-template-columns:1fr} }
+
 .note-bar{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:11px 15px;font-size:.85rem;font-weight:600;margin-bottom:18px;display:none}
 .note-bar.show{display:block}
 .empty{padding:50px 20px;text-align:center;color:var(--muted)}
@@ -155,6 +180,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
   <div class="tabs">
     <button id="tabReq" class="on" onclick="showTab('req')">Viewing requests <span class="n" id="nReq"></span></button>
     <button id="tabChat" onclick="showTab('chat')">Chats <span class="n" id="nChat"></span></button>
+    <button id="tabRooms" onclick="showTab('rooms')">Rooms <span class="n" id="nRooms"></span></button>
   </div>
 
   <section class="panel on" id="panelReq">
@@ -189,6 +215,57 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
           <input id="replyInput" placeholder="Reply to this visitor…" autocomplete="off" aria-label="Reply">
           <button class="btn" type="submit">Send</button>
         </form>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panelRooms">
+    <div class="rooms-layout">
+      <form class="postbox" id="postForm">
+        <h3>Post a room</h3>
+        <p class="sub">It appears on the public site the moment you publish.</p>
+        <div class="field"><label for="pName">Listing title</label>
+          <input id="pName" placeholder="e.g. Sinza Self-contained Single" required></div>
+        <div class="field"><label for="pArea">Area / neighbourhood</label>
+          <input id="pArea" list="areaList" placeholder="e.g. Sinza" required>
+          <datalist id="areaList"></datalist>
+          <p class="note">Pick a known area so tenants get accurate distances.</p>
+        </div>
+        <div class="two">
+          <div class="field"><label for="pBeds">Bedrooms</label>
+            <select id="pBeds"><option value="1">1 bedroom</option><option value="2">2 bedrooms</option></select>
+          </div>
+          <div class="field"><label for="pPrice">Monthly rent (TZS)</label>
+            <input id="pPrice" type="number" min="10000" step="5000" placeholder="70000" required></div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="pMaster"> Has a master bedroom</label>
+          <p class="note">Tick this if the main bedroom has its own bathroom inside.</p>
+        </div>
+        <div class="field"><label for="pTags">Features (comma-separated)</label>
+          <input id="pTags" placeholder="Self-contained, Water tank, Parking"></div>
+        <div class="field"><label for="pPhoto">Photo link (optional)</label>
+          <input id="pPhoto" placeholder="https://… link to a photo">
+          <p class="note">Leave empty and we'll use a stock room photo.</p></div>
+        <div class="two">
+          <div class="field"><label for="pLandlord">Landlord name</label>
+            <input id="pLandlord" placeholder="e.g. Mama Neema Kessy" required></div>
+          <div class="field"><label for="pPhone">Landlord phone</label>
+            <input id="pPhone" placeholder="e.g. 0754 000 000" required></div>
+        </div>
+        <div class="form-msg" id="postMsg"></div>
+        <div class="modal-actions">
+          <button class="btn ghost" type="button" onclick="clearPostForm()">Clear</button>
+          <button class="btn" type="submit" id="postSubmit">Publish room</button>
+        </div>
+      </form>
+
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Room</th><th>Rent</th><th>Landlord</th><th>Requests</th><th></th></tr></thead>
+          <tbody id="roomsBody"></tbody>
+        </table>
+        <div class="empty" id="roomsEmpty" hidden>No rooms listed yet.</div>
       </div>
     </div>
   </section>
@@ -246,10 +323,11 @@ function enter(){
 /* ---------- Loading ---------- */
 async function refresh(){
   try {
-    const [summary, viewings, chats] = await Promise.all([
+    const [summary, viewings, chats, listings] = await Promise.all([
       api('/api/admin/summary').then(r=>r.json()),
       api('/api/admin/viewings').then(r=>r.json()),
-      api('/api/admin/chats').then(r=>r.json())
+      api('/api/admin/chats').then(r=>r.json()),
+      fetch('/api/listings').then(r=>r.json())
     ]);
     if (summary.error) return signOut();
     CALLS_ENABLED = !!summary.callsEnabled;
@@ -263,10 +341,83 @@ async function refresh(){
     renderStats(summary);
     renderRequests(viewings);
     renderThreads(chats);
+    renderRooms(listings, viewings);
     $('nReq').textContent = viewings.length;
     $('nChat').textContent = chats.length;
+    $('nRooms').textContent = listings.length;
     if (currentSid) loadConvo(currentSid, true);
   } catch { toast('Could not reach the server.'); }
+}
+
+/* ---------- Rooms ---------- */
+function renderRooms(listings, viewings){
+  $('roomsEmpty').hidden = listings.length > 0;
+  const counts = {};
+  viewings.forEach(v => { counts[v.listing_name] = (counts[v.listing_name] || 0) + 1; });
+  $('roomsBody').innerHTML = listings.map(l=>{
+    const n = counts[l.name] || 0;
+    return `<tr>
+      <td class="room-name">
+        <b>${esc(l.name)}</b>
+        <span class="quote">${esc(l.area)} · ${l.beds} bed</span>
+        ${l.master ? '<span class="mini-master">Master</span>' : ''}
+      </td>
+      <td class="num">${tzs(l.price)} TZS</td>
+      <td class="who"><b>${esc(l.landlord_name || '—')}</b><span>${esc(l.landlord_phone || '')}</span></td>
+      <td class="num">${n || '—'}</td>
+      <td><button class="btn small ghost danger" onclick="removeRoom(${l.id}, ${JSON.stringify(String(l.name))})">Remove</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function submitPost(e){
+  e.preventDefault();
+  const msgBox = $('postMsg'); msgBox.className = 'form-msg';
+  const body = {
+    name: $('pName').value.trim(),
+    area: $('pArea').value.trim(),
+    beds: +$('pBeds').value,
+    master: $('pMaster').checked,
+    price: +$('pPrice').value,
+    tags: $('pTags').value,
+    photo_url: $('pPhoto').value.trim(),
+    landlord_name: $('pLandlord').value.trim(),
+    landlord_phone: $('pPhone').value.trim()
+  };
+  if (!body.name || !body.area || !body.price || !body.landlord_name || !body.landlord_phone){
+    msgBox.textContent = 'Fill in every field except features and photo.';
+    msgBox.className = 'form-msg err'; return;
+  }
+  $('postSubmit').disabled = true;
+  try {
+    const res = await api('/api/admin/listings', { method:'POST', body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not post that room.');
+    clearPostForm();
+    msgBox.textContent = data.message; msgBox.className = 'form-msg ok';
+    toast('Room posted — it is live on the site.');
+    refresh();
+  } catch (err) {
+    msgBox.textContent = err.message; msgBox.className = 'form-msg err';
+  } finally { $('postSubmit').disabled = false; }
+}
+
+function clearPostForm(){
+  ['pName','pArea','pPrice','pTags','pPhoto','pLandlord','pPhone'].forEach(id=>$(id).value='');
+  $('pMaster').checked = false;
+  $('pBeds').value = '1';
+  $('postMsg').className = 'form-msg';
+}
+
+async function removeRoom(id, name){
+  if (!confirm(`Remove "${name}" from the site? Tenants will stop seeing it.`)) return;
+  try {
+    const res = await api('/api/admin/listings/' + id, { method:'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not remove that room.');
+    toast('Room removed from the site.');
+    refresh();
+  } catch (err) { toast(err.message); }
 }
 
 function renderStats(s){
@@ -394,13 +545,17 @@ document.addEventListener('click', e=>{
 });
 
 function showTab(which){
-  $('tabReq').classList.toggle('on', which === 'req');
-  $('tabChat').classList.toggle('on', which === 'chat');
-  $('panelReq').classList.toggle('on', which === 'req');
-  $('panelChat').classList.toggle('on', which === 'chat');
+  ['req','chat','rooms'].forEach(t=>{
+    $('tab' + t[0].toUpperCase() + t.slice(1)).classList.toggle('on', t === which);
+    $('panel' + t[0].toUpperCase() + t.slice(1)).classList.toggle('on', t === which);
+  });
 }
 
 $('keyInput').addEventListener('keydown', e=>{ if (e.key === 'Enter') signIn(); });
+$('postForm').addEventListener('submit', submitPost);
+fetch('/api/areas').then(r=>r.json())
+  .then(areas=>{ $('areaList').innerHTML = areas.map(a=>`<option value="${esc(a[0].toUpperCase()+a.slice(1))}"></option>`).join(''); })
+  .catch(()=>{});
 if (KEY) enter();
 </script>
 </body>

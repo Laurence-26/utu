@@ -5,7 +5,7 @@ A full working rental website for 1- and 2-bedroom houses in Dar es Salaam, with
 - **Location search** — filter rooms by neighbourhood (Sinza, Mikocheni, Tabata…)
 - **Student-friendly rents** — every listing is between 60,000 and 80,000 TZS per month
 - **Master bedroom filter** — rooms whose main bedroom has its own bathroom carry a "Master bedroom" badge, and one tap narrows the list to just those
-- **Admin panel** at `/admin` — every viewing request from every landlord in one table, with statuses (pending / contacted / closed) and a chat inbox
+- **Admin panel** at `/admin` — every viewing request from every landlord in one table, with statuses (pending / contacted / closed), a chat inbox, and a **Rooms tab for posting listings straight onto the public site**
 - **Live chat** — visitors chat with the office from a widget on the rooms page; the admin replies from the panel and both sides poll every few seconds
 - **Call buttons** — tap to dial the landlord, the visitor or the office. Enabled only when the site is served locally, so the public demo never rings anyone's phone
 - **Recommendation engine** — pick your university (UDSM, Ardhi, MUHAS, DIT, IFM…) or workplace (Kariakoo, Posta, Mlimani City…) and rooms are ranked nearest first, with distance in km and a daladala commute estimate
@@ -97,6 +97,8 @@ Admin routes need the key, sent as an `x-admin-key` header:
 | GET | `/api/admin/summary` | Counts for the dashboard tiles |
 | GET | `/api/admin/viewings` | Every viewing request, all landlords |
 | PATCH | `/api/admin/viewings/:id` | Set status to pending / contacted / closed |
+| POST | `/api/admin/listings` | Post a room onto the public site |
+| DELETE | `/api/admin/listings/:id` | Remove a room (refused if it has viewing requests) |
 | GET | `/api/admin/chats` | Chat threads with their latest message |
 | GET/POST | `/api/admin/chats/:sid` | Read a thread / reply to it |
 
