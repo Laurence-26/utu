@@ -73,6 +73,7 @@ const cols = db.prepare(`PRAGMA table_info(listings)`).all().map(c => c.name);
 if (!cols.includes('photo_url')) db.exec(`ALTER TABLE listings ADD COLUMN photo_url TEXT`);
 if (!cols.includes('master'))    db.exec(`ALTER TABLE listings ADD COLUMN master INTEGER DEFAULT 0`);
 if (!cols.includes('description')) db.exec(`ALTER TABLE listings ADD COLUMN description TEXT`);
+if (!cols.includes('amenities'))   db.exec(`ALTER TABLE listings ADD COLUMN amenities TEXT DEFAULT '{}'`);
 
 /* ---------------- Demo landlords ---------------- */
 const DEMO_LANDLORDS = [
@@ -103,6 +104,46 @@ const seedListings = [
   ['Manzese Argentina Single','Manzese',1,60000,-6.7973,39.2320,['Budget friendly','Near daladala'],36,1,IMG('photo-1484154218962-a197022b5858'),0],
   ['Kijitonyama Sayansi Studio','Kijitonyama',1,66000,-6.7735,39.2320,['Self-contained','Near COSTECH'],25,1,IMG('photo-1493809842364-78817add7ffb'),1],
 ];
+
+/* The things tenants actually compare rooms on. Kept as a fixed list rather
+   than free text so two rooms can be put side by side honestly. */
+const AMENITIES = [
+  { key:'toilet',    label:'Private toilet & shower' },
+  { key:'kitchen',   label:'Kitchen inside' },
+  { key:'parking',   label:'Parking space' },
+  { key:'luku',      label:'Own Luku meter' },
+  { key:'water',     label:'Water included in rent' },
+  { key:'tank',      label:'Water tank or bore-hole' },
+  { key:'fence',     label:'Fenced compound' },
+  { key:'furnished', label:'Furnished' },
+  { key:'wifi',      label:'Internet ready' },
+];
+
+/* Per-room amenity flags, in the same order as seedListings.
+   Order of keys: toilet, kitchen, parking, luku, water, tank, fence, furnished, wifi */
+const seedAmenities = [
+  [1,0,0,1,0,1,0,0,0], // Sinza Palestina Single
+  [1,1,1,1,0,0,1,0,1], // Mikocheni B Garden Flat
+  [0,0,0,1,0,0,1,0,0], // Ubungo Riverside Room
+  [1,1,0,1,0,1,1,0,0], // Kijitonyama Twin Rooms
+  [0,0,0,1,1,0,0,0,0], // Mwenge Makumbusho Single
+  [1,1,1,1,1,1,1,0,0], // Tabata Segerea Family House
+  [1,0,0,1,0,1,1,0,1], // Upanga Seaview Single
+  [1,1,1,1,0,1,1,1,1], // Msasani Bonde la Mpunga 2BR
+  [0,0,0,1,0,0,0,0,0], // Kinondoni Mkwajuni Room
+  [1,1,1,1,0,1,1,0,1], // Mbezi Beach Makonde 2BR
+  [0,0,0,1,0,0,0,0,0], // Ilala Bungoni Single Room
+  [1,1,1,1,0,1,1,0,0], // Kigamboni Ferry-side 2BR
+  [0,0,0,1,0,0,0,0,0], // Manzese Argentina Single
+  [1,1,0,1,0,1,1,1,1], // Kijitonyama Sayansi Studio
+];
+
+const amenityJSON = i => {
+  const row = seedAmenities[i] || [];
+  const out = {};
+  AMENITIES.forEach((a, n) => { out[a.key] = row[n] ? 1 : 0; });
+  return JSON.stringify(out);
+};
 
 /* Written for the room's own page — what a tenant wants to know before
    spending fare to come and look. Indexed to match seedListings above. */
@@ -160,14 +201,14 @@ if (count === 0) {
   const insLL = db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)');
   DEMO_LANDLORDS.forEach(l => insLL.run(l.name, l.phone));
 
-  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description)
-                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+  const ins = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description,amenities)
+                          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   const insP = db.prepare(`INSERT INTO listing_photos (listing_id,url,caption,position) VALUES (?,?,?,?)`);
   const ids = [];
   const tx = db.transaction(rows => rows.forEach((r, i) => {
     const ll = DEMO_LANDLORDS[r[8]];
     const info = ins.run(r[0],r[1],r[2],r[3],r[4],r[5],JSON.stringify(r[6]),r[7],ll.name,ll.phone,r[9],r[10],
-                         seedDescriptions[i] || null);
+                         seedDescriptions[i] || null, amenityJSON(i));
     ids.push(info.lastInsertRowid);
     galleryFor(i, r[1]).forEach((p, n) => insP.run(info.lastInsertRowid, p.url, p.caption, n));
   }));
@@ -197,4 +238,20 @@ if (db.prepare('SELECT COUNT(*) AS n FROM listing_photos').get().n === 0) {
   if (n) console.log(`Backfilled galleries and descriptions for ${n} existing listings`);
 }
 
+/* Same again for amenities, which arrived after the galleries. */
+if (db.prepare(`SELECT COUNT(*) AS n FROM listings WHERE amenities IS NOT NULL AND amenities != '{}' AND amenities != ''`).get().n === 0) {
+  const find = db.prepare('SELECT id FROM listings WHERE name=?');
+  const set = db.prepare('UPDATE listings SET amenities=? WHERE id=?');
+  let n = 0;
+  const tx = db.transaction(() => seedListings.forEach((r, i) => {
+    const row = find.get(r[0]);
+    if (!row) return;
+    set.run(amenityJSON(i), row.id);
+    n++;
+  }));
+  tx();
+  if (n) console.log(`Backfilled amenities for ${n} existing listings`);
+}
+
 module.exports = db;
+module.exports.AMENITIES = AMENITIES;

@@ -82,11 +82,31 @@ app.get('/api/landlords', (_req, res) => {
 
 app.get('/api/areas', (_req, res) => res.json(Object.keys(AREA_COORDS).sort()));
 
+/* The comparison table and the admin form both build themselves from this,
+   so the list of things rooms are compared on lives in exactly one place. */
+const AMENITIES = db.AMENITIES;
+app.get('/api/amenities', (_req, res) => res.json(AMENITIES));
+
+// Rows come out of SQLite with tags and amenities as JSON text
+function hydrate(row){
+  let amenities = {};
+  try { amenities = JSON.parse(row.amenities || '{}'); } catch {}
+  const present = AMENITIES.filter(a => amenities[a.key]).length;
+  return {
+    ...row,
+    tags: JSON.parse(row.tags || '[]'),
+    master: !!row.master,
+    amenities,
+    // "quality" stated plainly: how many of the compared features it actually has
+    featureCount: present,
+    featureTotal: AMENITIES.length
+  };
+}
+
 // GET /api/listings?beds=1&maxPrice=70000&master=1&q=sinza&lat=-6.77&lng=39.20&sort=near
 app.get('/api/listings', (req, res) => {
   const { beds, maxPrice, q, lat, lng, sort, master } = req.query;
-  let rows = db.prepare('SELECT * FROM listings ORDER BY created_at DESC').all()
-    .map(r => ({ ...r, tags: JSON.parse(r.tags || '[]'), master: !!r.master }));
+  let rows = db.prepare('SELECT * FROM listings ORDER BY created_at DESC').all().map(hydrate);
 
   if (beds && +beds > 0) rows = rows.filter(r => r.beds === +beds);
   if (master === '1') rows = rows.filter(r => r.master);
@@ -111,7 +131,7 @@ app.get('/api/listings/:id', (req, res) => {
   const row = db.prepare('SELECT * FROM listings WHERE id=?').get(+req.params.id);
   if (!row) return res.status(404).json({ error: 'Room not found.' });
 
-  const listing = { ...row, tags: JSON.parse(row.tags || '[]'), master: !!row.master };
+  const listing = hydrate(row);
   const photos = db.prepare('SELECT url, caption FROM listing_photos WHERE listing_id=? ORDER BY position, id')
     .all(listing.id);
 
@@ -135,7 +155,7 @@ const FALLBACK_PHOTOS = [
    Returns { error } for a bad submission, or { id } once it is live. */
 function createListing(body){
   const { name, area, beds, price, tags, landlord_name, landlord_phone, photo_url, master,
-          description, photos } = body || {};
+          description, photos, amenities } = body || {};
   if (!name || !area || !beds || !price || !landlord_name || !landlord_phone)
     return { error: 'name, area, beds, price, landlord_name and landlord_phone are required.' };
   if (![1, 2].includes(+beds))
@@ -158,11 +178,15 @@ function createListing(body){
   const llName = String(landlord_name).trim(), llPhone = String(landlord_phone).trim();
   db.prepare('INSERT OR IGNORE INTO landlords (name, phone) VALUES (?,?)').run(llName, llPhone);
 
-  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description)
-                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+  // Only keys we actually compare on, so the table never grows a stray column
+  const amenityMap = {};
+  AMENITIES.forEach(a => { amenityMap[a.key] = (amenities && amenities[a.key]) ? 1 : 0; });
+
+  const info = db.prepare(`INSERT INTO listings (name,area,beds,price,lat,lng,tags,hue,landlord_name,landlord_phone,photo_url,master,description,amenities)
+                           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(String(name).trim(), String(area).trim(), +beds, +price, lat, lng,
          JSON.stringify(tagList.slice(0, 5)), hue, llName, llPhone, photo, master ? 1 : 0,
-         String(description || '').trim() || null);
+         String(description || '').trim() || null, JSON.stringify(amenityMap));
 
   // Extra gallery photos, one link per line or comma-separated
   const extra = (Array.isArray(photos) ? photos : String(photos || '').split(/[\n,]/))

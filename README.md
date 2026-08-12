@@ -6,6 +6,7 @@ A full working rental website for 1- and 2-bedroom houses in Dar es Salaam, with
 - **Student-friendly rents** — every listing is between 60,000 and 80,000 TZS per month
 - **Master bedroom filter** — rooms whose main bedroom has its own bathroom carry a "Master bedroom" badge, and one tap narrows the list to just those
 - **A page per room** — click any card for a photo gallery (the room, the building, the street outside), a written description, the full details, and the distance and commute time to every campus and workplace on the list
+- **Side-by-side comparison** — tick "Compare" on up to four rooms and a table puts them next to each other: rent, distance and commute from your chosen campus, and a tick-or-dash for each of the nine things rooms are compared on (private toilet, kitchen inside, parking, own Luku meter, water included, water tank, fenced compound, furnished, internet). The cheapest, nearest and most complete room in each row is flagged
 - **Admin panel** at `/admin` — every viewing request from every landlord in one table, with statuses (pending / contacted / closed), a chat inbox, and a **Rooms tab for posting listings straight onto the public site**
 - **Live chat** — visitors chat with the office from a widget on the rooms page; the admin replies from the panel and both sides poll every few seconds
 - **Call buttons** — tap to dial the landlord, the visitor or the office. Enabled only when the site is served locally, so the public demo never rings anyone's phone

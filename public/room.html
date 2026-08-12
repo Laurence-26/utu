@@ -82,6 +82,13 @@ section.block h2{font-size:1.18rem;font-weight:800;letter-spacing:-.02em;margin-
 .features{display:flex;flex-wrap:wrap;gap:8px}
 .feature{background:var(--cream);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-size:.85rem;font-weight:600;color:var(--muted)}
 
+.checklist{list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}
+.checklist li{display:flex;align-items:center;gap:9px;font-size:.92rem;padding:7px 0;border-bottom:1px dashed var(--line)}
+.checklist .mark{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:.72rem;font-weight:800;flex:none}
+.checklist li.has .mark{background:#EAF7EC;color:#1E6B34}
+.checklist li.hasnt{color:var(--muted)}
+.checklist li.hasnt .mark{background:var(--cream);color:var(--muted)}
+
 /* ---------- Distances ---------- */
 .dist-list{display:flex;flex-direction:column;gap:9px}
 .dist{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;
@@ -213,6 +220,11 @@ section.block h2{font-size:1.18rem;font-weight:800;letter-spacing:-.02em;margin-
         <div class="features" id="features"></div>
       </section>
 
+      <section class="block" id="amenBlock">
+        <h2>Room checklist</h2>
+        <ul class="checklist" id="checklist"></ul>
+      </section>
+
       <section class="block">
         <h2>How far from your day</h2>
         <div class="dist-list" id="dists"></div>
@@ -262,6 +274,7 @@ const commuteMins = km => Math.max(5, Math.round(km / 14 * 60));
 
 const ID = +new URLSearchParams(location.search).get('id');
 let listing = null, photos = [], distances = [], shot = 0, showAllDist = false, CALLS_ENABLED = false;
+let AMENITIES = [];
 
 function toast(msg){
   const t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -355,6 +368,13 @@ function render(){
   $('featureBlock').hidden = !(listing.tags || []).length;
   $('features').innerHTML = (listing.tags || []).map(t => `<span class="feature">${esc(t)}</span>`).join('');
 
+  $('amenBlock').hidden = !AMENITIES.length;
+  const has = listing.amenities || {};
+  $('checklist').innerHTML = AMENITIES.map(a => `
+    <li class="${has[a.key] ? 'has' : 'hasnt'}">
+      <span class="mark">${has[a.key] ? '✓' : '—'}</span>${esc(a.label)}
+    </li>`).join('');
+
   renderDistances();
 
   const initials = (listing.landlord_name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
@@ -426,10 +446,12 @@ document.addEventListener('keydown', e=>{
 (async function init(){
   if (!ID){ $('loading').hidden = true; $('missing').hidden = false; return; }
   try {
-    const [res, cfg] = await Promise.all([
+    const [res, cfg, amen] = await Promise.all([
       fetch('/api/listings/' + ID),
-      fetch('/api/config').then(r=>r.json()).catch(()=>({}))
+      fetch('/api/config').then(r=>r.json()).catch(()=>({})),
+      fetch('/api/amenities').then(r=>r.json()).catch(()=>[])
     ]);
+    AMENITIES = amen || [];
     if (!res.ok){ $('loading').hidden = true; $('missing').hidden = false; return; }
     const data = await res.json();
     listing = data.listing;

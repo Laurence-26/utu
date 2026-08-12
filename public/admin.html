@@ -137,6 +137,10 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .form-msg{border-radius:12px;padding:10px 14px;font-size:.86rem;font-weight:600;margin-top:12px;display:none}
 .form-msg.ok{display:block;background:var(--ok-bg);color:var(--ok)}
 .form-msg.err{display:block;background:#FDEBEB;color:#A82A2A}
+.amen-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+.amen-grid label{display:flex;align-items:center;gap:8px;font-size:.84rem;font-weight:600;cursor:pointer;margin:0}
+.amen-grid input{width:16px;height:16px;accent-color:var(--orange);flex:none}
+@media (max-width:560px){ .amen-grid{grid-template-columns:1fr} }
 .room-name b{display:block}
 .room-name .mini-master{margin-left:0;margin-top:4px}
 .danger{border-color:#E5B4B4;color:#A82A2A}
@@ -280,6 +284,10 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
         <div class="field">
           <label class="check"><input type="checkbox" id="pMaster"> Has a master bedroom</label>
         </div>
+        <div class="field">
+          <label>What the room has</label>
+          <div class="amen-grid" id="amenGrid"></div>
+        </div>
         <div class="field"><label for="pTags">Features (comma-separated)</label>
           <input id="pTags" placeholder="Self-contained, Water tank, Parking"></div>
         <div class="field"><label for="pDesc">Description</label>
@@ -418,6 +426,8 @@ async function submitPost(e){
     description: $('pDesc').value.trim(),
     photo_url: $('pPhoto').value.trim(),
     photos: $('pGallery').value,
+    amenities: Object.fromEntries(
+      [...document.querySelectorAll('#amenGrid input')].map(c => [c.dataset.key, c.checked ? 1 : 0])),
     landlord_name: $('pLandlord').value.trim(),
     landlord_phone: $('pPhone').value.trim()
   };
@@ -442,6 +452,7 @@ async function submitPost(e){
 function clearPostForm(){
   ['pName','pArea','pPrice','pTags','pDesc','pPhoto','pGallery','pLandlord','pPhone'].forEach(id=>$(id).value='');
   $('pMaster').checked = false;
+  document.querySelectorAll('#amenGrid input').forEach(c => c.checked = false);
   $('pBeds').value = '1';
   $('postMsg').className = 'form-msg';
 }
@@ -592,6 +603,10 @@ $('keyInput').addEventListener('keydown', e=>{ if (e.key === 'Enter') signIn(); 
 $('postForm').addEventListener('submit', submitPost);
 fetch('/api/areas').then(r=>r.json())
   .then(areas=>{ $('areaList').innerHTML = areas.map(a=>`<option value="${esc(a[0].toUpperCase()+a.slice(1))}"></option>`).join(''); })
+  .catch(()=>{});
+fetch('/api/amenities').then(r=>r.json())
+  .then(list=>{ $('amenGrid').innerHTML = list.map(a=>
+    `<label><input type="checkbox" data-key="${esc(a.key)}"> ${esc(a.label)}</label>`).join(''); })
   .catch(()=>{});
 if (KEY) enter();
 </script>

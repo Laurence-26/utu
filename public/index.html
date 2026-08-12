@@ -107,7 +107,7 @@ input,select,textarea{font-family:inherit;font-size:1rem}
   padding:5px 12px;margin:3px 4px 0 0;font-weight:600;font-size:.8rem;cursor:pointer}
 .demo-chip:hover{border-color:var(--orange);color:var(--orange)}
 .badge-beds{position:absolute;top:12px;left:12px;background:rgba(255,255,255,.95);border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;color:var(--ink)}
-.badge-dist{position:absolute;top:12px;right:12px;background:var(--orange);color:#fff;border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;display:none;align-items:center;gap:5px}
+.badge-dist{position:absolute;top:12px;right:12px;background:var(--orange);color:#fff;border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;display:none;align-items:center;gap:5px;white-space:nowrap}
 .anchored .badge-dist{display:inline-flex}
 .card-body{padding:18px 18px 20px;display:flex;flex-direction:column;gap:10px;flex:1}
 .card-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -125,6 +125,48 @@ input,select,textarea{font-family:inherit;font-size:1rem}
 .meter{height:6px;background:var(--cream);border-radius:99px;overflow:hidden}
 .meter i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--orange));border-radius:99px}
 .card .btn{align-self:flex-start;margin-top:4px;padding:9px 18px;font-size:.88rem}
+
+/* ---------- Compare ---------- */
+/* bottom-right is the one corner no other badge uses */
+.cmp-check{position:absolute;bottom:12px;right:12px;z-index:2;display:inline-flex;align-items:center;gap:6px;
+  background:rgba(255,255,255,.95);border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;
+  font-size:.76rem;font-weight:700;color:var(--ink);cursor:pointer;white-space:nowrap}
+.cmp-check input{width:15px;height:15px;accent-color:var(--orange);margin:0;cursor:pointer}
+.cmp-check:hover{border-color:var(--orange);color:var(--orange)}
+.cmp-check:has(input:checked){background:var(--orange);border-color:var(--orange);color:#fff}
+
+.cmp-bar{position:fixed;left:50%;transform:translateX(-50%) translateY(120px);bottom:22px;z-index:140;
+  display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;border-radius:999px;
+  padding:11px 14px 11px 22px;box-shadow:0 10px 30px rgba(36,22,16,.3);transition:transform .25s;max-width:92vw}
+.cmp-bar.show{transform:translateX(-50%) translateY(0)}
+.cmp-bar b{font-family:'Bricolage Grotesque';font-size:.95rem;white-space:nowrap}
+.cmp-bar .clear{background:none;border:none;color:var(--amber);font-weight:700;font-size:.86rem;white-space:nowrap}
+.cmp-bar .btn{padding:8px 18px;font-size:.88rem}
+
+.compare{padding:0 clamp(16px,5vw,56px) 60px}
+.compare-inner{max-width:1120px;margin:0 auto}
+.compare h2{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.compare .lede{color:var(--muted);font-size:.94rem;margin-bottom:18px}
+.cmp-wrap{border:1.5px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:#fff}
+table.cmp{border-collapse:collapse;width:100%;min-width:560px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:middle;font-size:.9rem}
+table.cmp tr:last-child td,table.cmp tr:last-child th{border-bottom:none}
+table.cmp thead th{background:var(--cream);vertical-align:bottom}
+table.cmp th.rowhead{font-size:.76rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;
+  width:172px;background:var(--cream);position:sticky;left:0}
+.cmp-room{min-width:150px}
+.cmp-room img,.cmp-room svg{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;margin-bottom:8px;display:block}
+.cmp-room b{display:block;font-size:.92rem;line-height:1.25}
+.cmp-room span{display:block;color:var(--muted);font-size:.78rem}
+.cmp-room .drop{display:block;background:none;border:none;color:var(--muted);font-size:.76rem;font-weight:700;padding:4px 0}
+.cmp-room .drop:hover{color:var(--orange)}
+td.val{font-variant-numeric:tabular-nums}
+td.val.best{color:var(--orange);font-weight:800}
+td.val .flag{display:block;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+.yes{color:#1E6B34;font-weight:800}
+.no{color:var(--muted)}
+.qbar{display:block;height:6px;background:var(--cream);border-radius:99px;overflow:hidden;margin-top:5px;max-width:120px}
+.qbar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--orange))}
 
 .empty{text-align:center;padding:70px 20px;color:var(--muted);border:1.5px dashed var(--line);border-radius:var(--radius);background:var(--cream)}
 .empty h3{font-size:1.2rem;color:var(--ink);margin-bottom:6px}
@@ -206,6 +248,12 @@ footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;ju
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media (max-width:640px){ .nav-links a.link{display:none} .filters{top:60px} }
+@media (max-width:560px){
+  table.cmp th.rowhead{width:118px;font-size:.7rem}
+  table.cmp{min-width:440px}
+  .cmp-bar{gap:10px;padding:10px 12px 10px 16px}
+  .cmp-bar b{font-size:.85rem}
+}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} html{scroll-behavior:auto} }
 </style>
 </head>
@@ -287,6 +335,19 @@ footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;ju
     </div>
   </div>
 </main>
+
+<section class="compare" id="compare" hidden>
+  <div class="compare-inner">
+    <h2>Compare these rooms</h2>
+    <p class="lede" id="compareLede"></p>
+    <div class="cmp-wrap">
+      <table class="cmp">
+        <thead><tr id="cmpHead"></tr></thead>
+        <tbody id="cmpBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <section class="how" id="how">
   <div class="how-inner">
@@ -417,6 +478,12 @@ footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;ju
   </form>
 </div>
 
+<div class="cmp-bar" id="cmpBar">
+  <b id="cmpCount"></b>
+  <button class="clear" onclick="clearCompare()">Clear</button>
+  <button class="btn" onclick="showCompare()">Compare</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -514,6 +581,7 @@ async function render(){
     return;
   }
 
+  lastRows = list;
   const maxKm = state.anchor ? Math.max(...list.map(l=>l.km||0), 1) : 1;
   $('resultsTitle').textContent = state.anchor ? `Rooms near ${state.anchor.name}` : 'All available rooms';
   $('resultsCount').textContent = `${list.length} room${list.length===1?'':'s'} available`;
@@ -527,6 +595,9 @@ async function render(){
           ? `<img src="${esc(l.photo_url)}" alt="Photo of ${esc(l.name)}" loading="lazy"
                  onerror="this.closest('.photo').insertAdjacentHTML('afterbegin', photoSVG({name:'${esc(l.name)}',hue:${l.hue||24}})); this.remove();">`
           : photoSVG(l)}
+        <label class="cmp-check" title="Add this room to the comparison">
+          <input type="checkbox" data-cmp="${l.id}" ${compare.has(l.id)?'checked':''}> Compare
+        </label>
         <span class="badge-beds">${l.beds} bedroom${l.beds>1?'s':''}</span>
         ${l.master ? `<span class="badge-master">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M6 10V7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -565,6 +636,96 @@ async function render(){
     </article>
   `).join('');
   applyCallState();
+  updateCmpBar();
+  if (!$('compare').hidden) drawCompare();
+}
+
+/* ---------- Compare rooms ---------- */
+const compare = new Set();
+let AMENITIES = [];
+let lastRows = [];
+
+function toggleCompare(id, on){
+  if (on){
+    if (compare.size >= 4){ toast('You can compare four rooms at a time.'); return false; }
+    compare.add(id);
+  } else compare.delete(id);
+  updateCmpBar();
+  if (!$('compare').hidden) drawCompare();
+  return true;
+}
+function clearCompare(){
+  compare.clear();
+  document.querySelectorAll('[data-cmp]').forEach(c=>c.checked=false);
+  updateCmpBar();
+  $('compare').hidden = true;
+}
+function updateCmpBar(){
+  $('cmpCount').textContent = `${compare.size} room${compare.size===1?'':'s'} selected`;
+  $('cmpBar').classList.toggle('show', compare.size > 0);
+}
+function showCompare(){
+  if (compare.size < 2){ toast('Pick at least two rooms to compare.'); return; }
+  drawCompare();
+  $('compare').hidden = false;
+  $('compare').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function drawCompare(){
+  const rooms = [...compare].map(id => lastRows.find(r=>r.id===id)).filter(Boolean);
+  if (rooms.length < 2){ $('compare').hidden = true; return; }
+
+  $('compareLede').textContent = state.anchor
+    ? `Distances are from ${state.anchor.name}. The best value in each row is highlighted.`
+    : 'Pick a university or workplace above to add distance and commute time to this table.';
+
+  $('cmpHead').innerHTML = '<th class="rowhead">Room</th>' + rooms.map(r=>`
+    <th class="cmp-room">
+      ${r.photo_url ? `<img src="${esc(r.photo_url)}" alt="" loading="lazy">` : photoSVG(r)}
+      <b>${esc(r.name)}</b>
+      <span>${esc(r.area)}</span>
+      <button class="drop" data-drop="${r.id}">Remove</button>
+    </th>`).join('');
+
+  const cheapest = Math.min(...rooms.map(r=>r.price));
+  const nearest  = state.anchor ? Math.min(...rooms.map(r=>r.km ?? Infinity)) : null;
+  const mostFeat = Math.max(...rooms.map(r=>r.featureCount || 0));
+
+  const rows = [];
+  rows.push(['Monthly rent', rooms.map(r=>({
+    v: tzs(r.price) + ' TZS', best: r.price === cheapest, flag: r.price === cheapest ? 'Cheapest' : ''
+  }))]);
+
+  if (state.anchor){
+    rows.push([`Distance from ${state.anchor.name.split(' (')[0]}`, rooms.map(r=>({
+      v: r.km != null ? r.km.toFixed(1) + ' km' : '—',
+      best: r.km === nearest, flag: r.km === nearest ? 'Nearest' : ''
+    }))]);
+    rows.push(['Daladala commute', rooms.map(r=>({
+      v: r.km != null ? '≈ ' + commuteMins(r.km) + ' min' : '—', best: r.km === nearest, flag: ''
+    }))]);
+  }
+
+  rows.push(['Bedrooms', rooms.map(r=>({ v: String(r.beds), best:false, flag:'' }))]);
+  rows.push(['Master bedroom', rooms.map(r=>({ tick: r.master }))]);
+  rows.push(['Features in total', rooms.map(r=>({
+    v: `${r.featureCount} of ${r.featureTotal}`,
+    bar: Math.round((r.featureCount / r.featureTotal) * 100),
+    best: r.featureCount === mostFeat, flag: r.featureCount === mostFeat ? 'Most complete' : ''
+  }))]);
+  AMENITIES.forEach(a => rows.push([a.label, rooms.map(r=>({ tick: !!(r.amenities||{})[a.key] }))]));
+  rows.push(['Landlord', rooms.map(r=>({ v: r.landlord_name || '—', best:false, flag:'' }))]);
+
+  $('cmpBody').innerHTML = rows.map(([label, cells])=>`
+    <tr>
+      <th class="rowhead">${esc(label)}</th>
+      ${cells.map(c=>{
+        if ('tick' in c) return `<td class="${c.tick?'yes':'no'}">${c.tick?'✓ Yes':'—'}</td>`;
+        return `<td class="val ${c.best?'best':''}">${esc(c.v)}
+          ${c.flag?`<span class="flag">${esc(c.flag)}</span>`:''}
+          ${c.bar!=null?`<span class="qbar"><i style="width:${c.bar}%"></i></span>`:''}</td>`;
+      }).join('')}
+    </tr>`).join('');
 }
 
 /* ---------- Calling (only when the site is served locally) ---------- */
@@ -750,9 +911,24 @@ async function loadRequests(){
 /* The whole card opens the room page, but the buttons inside it keep working */
 function openRoom(id){ location.href = '/room?id=' + id; }
 $('grid').addEventListener('click', e=>{
-  if (e.target.closest('button, a')) return;
+  // the compare tick box and the buttons inside a card must not navigate
+  if (e.target.closest('button, a, label, input')) return;
   const card = e.target.closest('[data-room]');
   if (card) openRoom(card.dataset.room);
+});
+$('grid').addEventListener('change', e=>{
+  const box = e.target.closest('[data-cmp]');
+  if (box && !toggleCompare(+box.dataset.cmp, box.checked)) box.checked = false;
+});
+$('cmpHead').addEventListener('click', e=>{
+  const b = e.target.closest('[data-drop]');
+  if (!b) return;
+  const id = +b.dataset.drop;
+  compare.delete(id);
+  const box = document.querySelector(`[data-cmp="${id}"]`);
+  if (box) box.checked = false;
+  updateCmpBar();
+  if (compare.size < 2) $('compare').hidden = true; else drawCompare();
 });
 $('grid').addEventListener('keydown', e=>{
   const card = e.target.closest('[data-room]');
@@ -774,14 +950,16 @@ function useDemoLandlord(phone){
 
 (async function init(){
   try {
-    const [a, areas, landlords, cfg] = await Promise.all([
+    const [a, areas, landlords, cfg, amen] = await Promise.all([
       fetch('/api/anchors').then(r=>r.json()),
       fetch('/api/areas').then(r=>r.json()),
       fetch('/api/landlords').then(r=>r.json()),
-      fetch('/api/config').then(r=>r.json())
+      fetch('/api/config').then(r=>r.json()),
+      fetch('/api/amenities').then(r=>r.json())
     ]);
     ANCHORS = a;
     CALLS_ENABLED = !!cfg.callsEnabled;
+    AMENITIES = amen;
     $('areaList').innerHTML = areas.map(x=>`<option value="${esc(x[0].toUpperCase()+x.slice(1))}">`).join('');
     $('demoChips').innerHTML = landlords.map(l =>
       `<button class="demo-chip" onclick="useDemoLandlord('${esc(l.phone)}')">${esc(l.name)} · ${esc(l.phone)} (${l.listings} house${l.listings===1?'':'s'})</button>`
