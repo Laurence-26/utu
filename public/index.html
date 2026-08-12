@@ -967,6 +967,7 @@ function useDemoLandlord(phone){
   } catch { toast('Could not reach the server — is it running?'); }
   setMode('uni');
   showChatUI();
+  const music = document.createElement('script'); music.src = '/music.js'; document.body.appendChild(music);
   applyCallState();
   if (sid) pollChat();
   chatTimer = setInterval(()=>{ if (sid) pollChat(); }, 4000);

@@ -56,6 +56,16 @@ ADMIN_KEY=something-only-you-know node server.js
 On Render, add `ADMIN_KEY` under **Environment**. The panel shows a warning banner
 while the default key is still in use.
 
+## Background music
+
+Optional. Drop an audio file at `public/music/theme.mp3`, or point `MUSIC_URL`
+at one, and a "Music on / off" control appears in the bottom-left corner. With
+neither, nothing appears and the site is silent.
+
+It starts on the visitor's first click rather than on page load, because every
+browser blocks unprompted audio. See `public/music/README.md` for where to find
+tracks you are licensed to use.
+
 ## Calling
 
 Call buttons dial through the device's own phone app (a `tel:` link). The server only

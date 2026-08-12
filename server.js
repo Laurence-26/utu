@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 const db = require('./db');
 
 const app = express();
@@ -24,6 +25,20 @@ function callsEnabled(req){
 }
 
 app.get('/api/config', (req, res) => res.json({ callsEnabled: callsEnabled(req) }));
+
+/* ---------- Background music ----------
+   Either drop a file at public/music/theme.mp3 or point MUSIC_URL at one.
+   With neither, /api/music returns nothing and the player stays hidden. */
+const LOCAL_TRACKS = ['theme.mp3', 'theme.m4a', 'theme.ogg'];
+function musicTrack(){
+  if (process.env.MUSIC_URL) return { url: process.env.MUSIC_URL, title: process.env.MUSIC_TITLE || '' };
+  for (const file of LOCAL_TRACKS){
+    if (fs.existsSync(path.join(__dirname, 'public', 'music', file)))
+      return { url: '/music/' + file, title: process.env.MUSIC_TITLE || '' };
+  }
+  return {};
+}
+app.get('/api/music', (_req, res) => res.json(musicTrack()));
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
 app.get('/room', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'room.html')));
