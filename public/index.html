@@ -866,6 +866,14 @@ function useDemoLandlord(phone){
     $('demoChips').innerHTML = landlords.map(l =>
       `<button class="demo-chip" onclick="useDemoLandlord('${esc(l.phone)}')">${esc(l.name)} · ${esc(l.phone)} (${l.listings} house${l.listings===1?'':'s'})</button>`
     ).join('') || 'No demo accounts yet.';
+    // A selection restored from a previous visit can point at rooms that have
+    // since been taken down. Drop those, or the bar counts rooms that are gone.
+    if (compare.size){
+      const live = new Set((await fetch('/api/listings').then(r=>r.json())).map(l => l.id));
+      let dropped = false;
+      [...compare].forEach(id => { if (!live.has(id)){ compare.delete(id); dropped = true; } });
+      if (dropped) saveCompare();
+    }
   } catch { toast('Could not reach the server — is it running?'); }
   setMode('uni');
   showChatUI();

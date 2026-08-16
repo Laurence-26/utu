@@ -97,9 +97,23 @@ p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
 .rel .km{color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums}
 .rel .acts{display:flex;gap:7px;margin-top:auto;flex-wrap:wrap}
 
-.state{padding:70px 20px;text-align:center;color:var(--muted)}
+.state{padding:48px 20px 70px;text-align:center;color:var(--muted)}
 .state h2{font-size:1.25rem;color:var(--ink);margin-bottom:8px}
-.state .btn{margin-top:16px}
+
+/* Rather than sending someone back to the list, let them choose right here */
+.picker{max-width:520px;margin:22px auto 0;text-align:left}
+.picklist{border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;
+  max-height:min(52vh,420px);overflow-y:auto}
+.pick{display:flex;align-items:center;gap:11px;padding:11px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.pick:last-child{border-bottom:none}
+.pick:hover{background:var(--cream)}
+.pick input{width:17px;height:17px;accent-color:var(--orange);flex:none}
+.pick .nm{flex:1;min-width:0}
+.pick b{display:block;font-size:.9rem;color:var(--ink);font-weight:700;line-height:1.25}
+.pick small{color:var(--muted);font-size:.78rem}
+.pick .pr{font-weight:800;color:var(--orange);font-size:.86rem;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pickacts{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+@media (max-width:480px){ .pickacts .btn{flex:1 1 100%} }
 
 /* ---------- Modal ---------- */
 .modal-back{position:fixed;inset:0;background:rgba(36,22,16,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
@@ -151,9 +165,15 @@ p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
 <div class="state" id="loading">Loading rooms…</div>
 
 <div class="state" id="tooFew" hidden>
-  <h2>Pick rooms to compare</h2>
-  <p>Tick “Compare” on two or more rooms and they will line up here.</p>
-  <a class="btn" href="/#rooms">Browse rooms</a>
+  <h2 id="tooFewTitle">Pick rooms to compare</h2>
+  <p id="tooFewMsg">Choose two or more and they will line up side by side.</p>
+  <div class="picker">
+    <div class="picklist" id="pickList"></div>
+    <div class="pickacts">
+      <a class="btn ghost" href="/#rooms">Browse rooms</a>
+      <button class="btn" id="pickGo">Compare selected</button>
+    </div>
+  </div>
 </div>
 
 <div class="wrap" id="content" hidden>
@@ -217,6 +237,7 @@ let ANCHORS = { uni: [], work: [] };
 let AMENITIES = [];
 let ALL = [];              // every listing, with km when an anchor is chosen
 let ids = [];              // the rooms being compared, in order
+let requested = [];        // what the URL asked for, to spot rooms that have gone
 let shown = [];            // the subset visible in the table on narrow screens
 let anchorId = '';
 let currentListing = null;
@@ -270,6 +291,15 @@ function visibleIds(){
   return kept;
 }
 
+function drawPicker(){
+  $('pickList').innerHTML = ALL.map(r => `
+    <label class="pick">
+      <input type="checkbox" value="${r.id}" ${ids.includes(r.id) ? 'checked' : ''}>
+      <span class="nm"><b>${esc(r.name)}</b><small>${esc(r.area)} · ${r.beds} bed${r.beds > 1 ? 's' : ''}</small></span>
+      <span class="pr">${tzs(r.price)} TZS</span>
+    </label>`).join('') || '<div class="pick">No rooms are listed yet.</div>';
+}
+
 function drawSlots(){
   const cap = capacity();
   if (ids.length <= cap){ $('slots').innerHTML = ''; $('slots').style.display = ''; return; }
@@ -286,6 +316,13 @@ function draw(){
   ids = rooms.map(r => r.id);
 
   if (rooms.length < 2){
+    // Say which of the two situations this is, then let them fix it here
+    const lost = requested.length && rooms.length < requested.length;
+    $('tooFewTitle').textContent = lost ? 'Those rooms are not listed any more' : 'Pick rooms to compare';
+    $('tooFewMsg').textContent = lost
+      ? 'They may have been taken off the site. Choose two or more below instead.'
+      : 'Choose two or more and they will line up side by side.';
+    drawPicker();
     $('loading').hidden = true; $('content').hidden = true; $('tooFew').hidden = false;
     return;
   }
@@ -476,6 +513,15 @@ document.addEventListener('click', e => {
   const req = e.target.closest('[data-req]');
   if (req) return openViewing(+req.dataset.req);
 });
+$('pickGo').addEventListener('click', () => {
+  const picked = [...$('pickList').querySelectorAll('input:checked')].map(c => +c.value);
+  if (picked.length < 2){ toast('Choose at least two rooms.'); return; }
+  if (picked.length > MAX){ toast(`Choose up to ${MAX} rooms.`); return; }
+  ids = picked;
+  requested = picked.slice();
+  syncUrl();
+  draw();
+});
 $('addSel').addEventListener('change', e => {
   const id = +e.target.value;
   if (id) addRoom(id);
@@ -508,6 +554,7 @@ window.addEventListener('resize', () => {
   if (!ids.length){
     try { ids = (JSON.parse(sessionStorage.getItem('utu-compare')) || []).slice(0, MAX); } catch {}
   }
+  requested = ids.slice();
 
   try {
     const [anchors, amen] = await Promise.all([
