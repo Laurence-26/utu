@@ -190,7 +190,7 @@ footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;ju
 /* ---------- Chat ---------- */
 .chat-launch{position:fixed;right:22px;bottom:22px;z-index:150;display:flex;align-items:center;gap:9px;
   background:var(--orange);color:#fff;border:none;border-radius:999px;padding:13px 20px;font-weight:700;font-size:.94rem;
-  box-shadow:0 8px 24px rgba(240,90,14,.35);transition:transform .15s,background .2s}
+  box-shadow:0 8px 24px rgba(240,90,14,.35);transition:transform .15s,background .2s,bottom .2s}
 .chat-launch:hover{background:var(--orange-deep);transform:translateY(-2px)}
 .chat-launch .dot{width:8px;height:8px;border-radius:50%;background:#fff;display:none}
 .chat-launch.has-reply .dot{display:block}
@@ -224,8 +224,14 @@ footer{padding:34px clamp(16px,5vw,56px);display:flex;flex-wrap:wrap;gap:14px;ju
 
 @media (max-width:640px){ .nav-links a.link{display:none} .filters{top:60px} }
 @media (max-width:560px){
-  .cmp-bar{gap:10px;padding:10px 12px 10px 16px}
+  /* On a phone the bar spans the width along the bottom, and the floating
+     chat and music controls lift above it so nothing sits on top of it. */
+  .cmp-bar{left:12px;right:12px;bottom:12px;transform:translateY(130px);
+    gap:10px;padding:10px 12px 10px 16px;justify-content:space-between}
+  .cmp-bar.show{transform:translateY(0)}
   .cmp-bar b{font-size:.85rem}
+  body.cmp-open .chat-launch{bottom:82px}
+  body.cmp-open #musicToggle{bottom:82px}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} html{scroll-behavior:auto} }
 </style>
@@ -626,6 +632,8 @@ function clearCompare(){
 function updateCmpBar(){
   $('cmpCount').textContent = `${compare.size} room${compare.size===1?'':'s'} selected`;
   $('cmpBar').classList.toggle('show', compare.size > 0);
+  // lets the chat and music controls move out of the bar's way
+  document.body.classList.toggle('cmp-open', compare.size > 0);
 }
 function showCompare(){
   if (compare.size < 2){ toast('Pick at least two rooms to compare.'); return; }

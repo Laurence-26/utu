@@ -31,7 +31,7 @@
       #musicToggle{position:fixed;left:22px;bottom:22px;z-index:150;display:inline-flex;align-items:center;gap:8px;
         border:1.5px solid var(--line,#F3E3D6);background:var(--white,#fff);color:var(--ink,#241610);
         border-radius:999px;padding:9px 16px;font-family:inherit;font-weight:700;font-size:.82rem;cursor:pointer;
-        box-shadow:0 6px 18px rgba(36,22,16,.10);transition:border-color .15s,color .15s}
+        box-shadow:0 6px 18px rgba(36,22,16,.10);transition:border-color .15s,color .15s,bottom .2s}
       #musicToggle:hover{border-color:var(--orange,#F05A0E);color:var(--orange,#F05A0E)}
       #musicToggle[aria-pressed="true"]{background:var(--orange,#F05A0E);border-color:var(--orange,#F05A0E);color:#fff}
       #musicToggle svg{flex:none}
