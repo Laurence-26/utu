@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare rooms — Utu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --white:#FFFFFF; --cream:#FFF6EF;
+  --orange:#F05A0E; --orange-deep:#C74108;
+  --amber:#FFB25E; --amber-soft:#FFE3C7;
+  --ink:#241610; --muted:#93796B; --line:#F3E3D6;
+  --radius:18px; --shadow:0 10px 30px rgba(36,22,16,.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+[hidden]{display:none!important}
+body{font-family:'Instrument Sans',system-ui,sans-serif;background:var(--white);color:var(--ink);line-height:1.55;overflow-x:hidden}
+h1,h2,h3{font-family:'Bricolage Grotesque','Instrument Sans',sans-serif}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit;font-size:1rem;color:var(--ink)}
+:focus-visible{outline:3px solid var(--orange);outline-offset:2px;border-radius:6px}
+img{max-width:100%;display:block}
+
+.nav{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px clamp(16px,5vw,56px);background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.logo{font-family:'Bricolage Grotesque';font-weight:800;font-size:1.35rem;letter-spacing:-.02em;color:var(--ink);text-decoration:none}
+.logo span{color:var(--orange)}
+.btn{background:var(--orange);color:#fff;border:none;border-radius:999px;padding:10px 20px;font-weight:600;font-size:.92rem;
+  transition:background .2s,transform .15s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+.btn:hover{background:var(--orange-deep);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--orange);border:1.5px solid var(--orange)}
+.btn.ghost:hover{background:var(--amber-soft)}
+.btn.small{padding:7px 14px;font-size:.82rem}
+.btn:disabled{opacity:.6;cursor:wait;transform:none}
+
+.wrap{max-width:1180px;margin:0 auto;padding:clamp(18px,4vw,32px) clamp(16px,5vw,56px) 80px}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--muted);text-decoration:none;font-weight:600;font-size:.9rem;margin-bottom:16px}
+.back:hover{color:var(--orange)}
+h1{font-size:clamp(1.5rem,3.4vw,2.2rem);font-weight:800;letter-spacing:-.03em;margin-bottom:6px}
+.lede{color:var(--muted);font-size:.98rem;margin-bottom:20px;max-width:62ch}
+
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px;
+  background:var(--cream);border:1.5px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+.controls label{font-weight:700;font-size:.85rem;white-space:nowrap}
+.controls select{border:1.5px solid var(--line);border-radius:999px;background:#fff;padding:9px 15px;
+  font-weight:600;font-size:.88rem;max-width:100%}
+.controls .grow{flex:1 1 200px;min-width:0}
+.controls .count{color:var(--muted);font-size:.85rem;font-weight:600;margin-left:auto}
+
+.cmp-wrap{border:1.5px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:#fff;margin-bottom:36px}
+table.cmp{border-collapse:collapse;width:100%;min-width:620px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:middle;font-size:.9rem}
+table.cmp tr:last-child td,table.cmp tr:last-child th{border-bottom:none}
+table.cmp thead th{background:var(--cream);vertical-align:top}
+th.rowhead{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;
+  width:180px;background:var(--cream);position:sticky;left:0;z-index:1}
+.cmp-room{min-width:190px}
+.cmp-room img,.cmp-room svg{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;margin-bottom:9px}
+.cmp-room b{display:block;font-size:.95rem;line-height:1.25}
+.cmp-room .area{display:block;color:var(--muted);font-size:.78rem;margin-bottom:9px}
+.cmp-room .acts{display:flex;flex-wrap:wrap;gap:6px}
+.cmp-room .drop{background:none;border:none;color:var(--muted);font-size:.78rem;font-weight:700;padding:4px 2px}
+.cmp-room .drop:hover{color:#A82A2A}
+td.val{font-variant-numeric:tabular-nums}
+td.val.best{color:var(--orange);font-weight:800}
+td.val .flag{display:block;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--orange)}
+.yes{color:#1E6B34;font-weight:800}
+.no{color:var(--muted)}
+.qbar{display:block;height:6px;background:var(--cream);border-radius:99px;overflow:hidden;margin-top:5px;max-width:130px}
+.qbar i{display:block;height:100%;background:linear-gradient(90deg,var(--amber),var(--orange))}
+
+/* ---------- Related ---------- */
+h2.sec{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
+.rel-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rel{border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;display:flex;flex-direction:column;
+  transition:transform .2s,box-shadow .2s}
+.rel:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.rel .pic{position:relative;aspect-ratio:16/10;background:var(--amber-soft)}
+.rel .pic img,.rel .pic svg{width:100%;height:100%;object-fit:cover}
+.rel .why{position:absolute;left:10px;bottom:10px;background:rgba(36,22,16,.85);color:#fff;border-radius:999px;
+  padding:4px 11px;font-size:.72rem;font-weight:700}
+.rel .body{padding:14px 15px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.rel h3{font-size:1rem;font-weight:700;line-height:1.25}
+.rel .meta{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.rel .price{font-family:'Bricolage Grotesque';font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums}
+.rel .km{color:var(--muted);font-size:.82rem;font-variant-numeric:tabular-nums}
+.rel .acts{display:flex;gap:7px;margin-top:auto;flex-wrap:wrap}
+
+.state{padding:70px 20px;text-align:center;color:var(--muted)}
+.state h2{font-size:1.25rem;color:var(--ink);margin-bottom:8px}
+.state .btn{margin-top:16px}
+
+/* ---------- Modal ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(36,22,16,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal-back.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:26px;box-shadow:var(--shadow)}
+.modal h3{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.modal .sub{color:var(--muted);font-size:.9rem;margin-bottom:16px}
+.field{margin-bottom:13px}
+.field label{display:block;font-weight:600;font-size:.86rem;margin-bottom:5px}
+.field input,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--cream)}
+.field textarea{resize:vertical;min-height:70px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.form-msg{border-radius:12px;padding:10px 14px;font-size:.88rem;font-weight:600;margin-top:12px;display:none}
+.form-msg.err{display:block;background:#FDEBEB;color:#A82A2A}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;
+  padding:12px 22px;border-radius:999px;font-weight:600;font-size:.92rem;opacity:0;transition:all .3s;z-index:200;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media (max-width:700px){
+  .controls{flex-direction:column;align-items:stretch;gap:6px}
+  /* flex-grow runs down the page once this is a column, so stop it stretching */
+  .controls .grow{flex:0 0 auto}
+  .controls label{margin-top:6px}
+  .controls .count{margin-left:0;margin-top:4px}
+  .controls select{width:100%}
+  th.rowhead{width:126px;font-size:.68rem;padding:12px 10px}
+  table.cmp{min-width:480px}
+  .cmp-room{min-width:172px}
+  .cmp-room .acts .btn{flex:1 1 100%}
+}
+@media (max-width:420px){
+  th.rowhead{width:106px}
+  table.cmp th,table.cmp td{padding:10px 9px;font-size:.85rem}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="logo" href="/">U<span>tu.</span></a>
+  <a class="btn ghost" href="/#rooms">All rooms</a>
+</nav>
+
+<div class="state" id="loading">Loading rooms…</div>
+
+<div class="state" id="tooFew" hidden>
+  <h2>Pick rooms to compare</h2>
+  <p>Tick “Compare” on two or more rooms and they will line up here.</p>
+  <a class="btn" href="/#rooms">Browse rooms</a>
+</div>
+
+<div class="wrap" id="content" hidden>
+  <a class="back" href="/#rooms">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Back to all rooms
+  </a>
+
+  <h1>Compare rooms</h1>
+  <p class="lede" id="lede"></p>
+
+  <div class="controls">
+    <label for="anchorSel">Distances from</label>
+    <span class="grow"><select id="anchorSel" style="width:100%"></select></span>
+    <label for="addSel">Add a room</label>
+    <span class="grow"><select id="addSel" style="width:100%"></select></span>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="cmp-wrap">
+    <table class="cmp">
+      <thead><tr id="cmpHead"></tr></thead>
+      <tbody id="cmpBody"></tbody>
+    </table>
+  </div>
+
+  <section id="relatedBlock" hidden>
+    <h2 class="sec">Rooms like these</h2>
+    <p class="sec-note" id="relNote"></p>
+    <div class="rel-grid" id="related"></div>
+  </section>
+</div>
+
+<div class="modal-back" id="viewModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="viewTitle">
+    <h3 id="viewTitle">Request a viewing</h3>
+    <p class="sub" id="viewSub"></p>
+    <div class="field"><label for="vName">Your name</label><input id="vName" placeholder="e.g. Amos"></div>
+    <div class="field"><label for="vPhone">Phone number</label><input id="vPhone" placeholder="e.g. 0686860396"></div>
+    <div class="field"><label for="vMsg">Message (optional)</label><textarea id="vMsg" placeholder="When would you like to visit?"></textarea></div>
+    <div class="form-msg" id="viewMsg"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <button class="btn" id="viewSubmit">Send request</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const tzs = n => Number(n).toLocaleString('en-US');
+const commuteMins = km => Math.max(5, Math.round(km / 14 * 60));
+const MAX = 4;
+
+let ANCHORS = { uni: [], work: [] };
+let AMENITIES = [];
+let ALL = [];              // every listing, with km when an anchor is chosen
+let ids = [];              // the rooms being compared, in order
+let anchorId = '';
+let currentListing = null;
+
+function toast(msg){
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+const flatAnchors = () => [...ANCHORS.uni, ...ANCHORS.work];
+const anchor = () => flatAnchors().find(a => a.id === anchorId) || null;
+const roomById = id => ALL.find(r => r.id === id);
+
+function photoSVG(l){
+  const h = l.hue || 24;
+  return `<svg viewBox="0 0 320 200" role="img" aria-label="Illustration of ${esc(l.name)}">
+    <rect width="320" height="200" fill="hsl(${h} 95% 96%)"/>
+    <circle cx="272" cy="34" r="46" fill="hsl(${h+10} 92% 82%)"/>
+    <rect x="0" y="150" width="320" height="50" fill="hsl(${h} 70% 88%)"/>
+    <rect x="86" y="96" width="128" height="62" rx="4" fill="#fff" stroke="hsl(${h} 70% 45%)" stroke-width="3"/>
+    <path d="M78 100 L150 58 L222 100" fill="hsl(${h} 88% 55%)" stroke="hsl(${h} 75% 40%)" stroke-width="3" stroke-linejoin="round"/>
+    <rect x="138" y="120" width="26" height="38" rx="2" fill="hsl(${h} 88% 55%)"/>
+  </svg>`;
+}
+
+/* Keep the address bar in step so the comparison can be shared or reloaded */
+function syncUrl(){
+  const p = new URLSearchParams();
+  if (ids.length) p.set('ids', ids.join(','));
+  if (anchorId) p.set('anchor', anchorId);
+  history.replaceState(null, '', '/compare?' + p.toString());
+  try { sessionStorage.setItem('utu-compare', JSON.stringify(ids)); } catch {}
+}
+
+async function loadListings(){
+  const p = new URLSearchParams();
+  const a = anchor();
+  if (a){ p.set('lat', a.lat); p.set('lng', a.lng); }
+  ALL = await fetch('/api/listings?' + p.toString()).then(r => r.json());
+}
+
+/* ---------- Table ---------- */
+function draw(){
+  const rooms = ids.map(roomById).filter(Boolean);
+  ids = rooms.map(r => r.id);
+
+  if (rooms.length < 2){
+    $('loading').hidden = true; $('content').hidden = true; $('tooFew').hidden = false;
+    return;
+  }
+  $('loading').hidden = true; $('tooFew').hidden = true; $('content').hidden = false;
+
+  const a = anchor();
+  $('lede').textContent = a
+    ? `Rent, distance from ${a.name}, and what each room comes with. The best value in every row is highlighted.`
+    : 'Rent and what each room comes with. Choose a campus or workplace to add distance and commute time.';
+  $('count').textContent = `${rooms.length} of ${MAX} rooms`;
+
+  $('cmpHead').innerHTML = '<th class="rowhead">Room</th>' + rooms.map(r => `
+    <th class="cmp-room">
+      ${r.photo_url ? `<img src="${esc(r.photo_url)}" alt="" loading="lazy" onerror="this.outerHTML='${''}'">` : photoSVG(r)}
+      <b>${esc(r.name)}</b>
+      <span class="area">${esc(r.area)}, Dar es Salaam</span>
+      <span class="acts">
+        <a class="btn small ghost" href="/room?id=${r.id}">View room</a>
+        <button class="btn small" data-req="${r.id}">Request viewing</button>
+        <button class="drop" data-drop="${r.id}">Remove</button>
+      </span>
+    </th>`).join('');
+
+  const cheapest = Math.min(...rooms.map(r => r.price));
+  const nearest  = a ? Math.min(...rooms.map(r => r.km ?? Infinity)) : null;
+  const mostFeat = Math.max(...rooms.map(r => r.featureCount || 0));
+
+  const rows = [];
+  rows.push(['Monthly rent', rooms.map(r => ({
+    v: tzs(r.price) + ' TZS', best: r.price === cheapest, flag: r.price === cheapest ? 'Cheapest' : '' }))]);
+
+  if (a){
+    rows.push([`Distance from ${a.name.split(' (')[0]}`, rooms.map(r => ({
+      v: r.km != null ? r.km.toFixed(1) + ' km' : '—',
+      best: r.km === nearest, flag: r.km === nearest ? 'Nearest' : '' }))]);
+    rows.push(['Daladala commute', rooms.map(r => ({
+      v: r.km != null ? '≈ ' + commuteMins(r.km) + ' min' : '—', best: r.km === nearest, flag: '' }))]);
+  }
+
+  rows.push(['Bedrooms', rooms.map(r => ({ v: String(r.beds), best:false, flag:'' }))]);
+  rows.push(['Master bedroom', rooms.map(r => ({ tick: r.master }))]);
+  rows.push(['Features in total', rooms.map(r => ({
+    v: `${r.featureCount} of ${r.featureTotal}`,
+    bar: Math.round((r.featureCount / r.featureTotal) * 100),
+    best: r.featureCount === mostFeat, flag: r.featureCount === mostFeat ? 'Most complete' : '' }))]);
+  AMENITIES.forEach(am => rows.push([am.label, rooms.map(r => ({ tick: !!(r.amenities || {})[am.key] }))]));
+  rows.push(['Landlord', rooms.map(r => ({ v: r.landlord_name || '—', best:false, flag:'' }))]);
+
+  $('cmpBody').innerHTML = rows.map(([label, cells]) => `
+    <tr>
+      <th class="rowhead">${esc(label)}</th>
+      ${cells.map(c => {
+        if ('tick' in c) return `<td class="${c.tick ? 'yes' : 'no'}">${c.tick ? '✓ Yes' : '—'}</td>`;
+        return `<td class="val ${c.best ? 'best' : ''}">${esc(c.v)}
+          ${c.flag ? `<span class="flag">${esc(c.flag)}</span>` : ''}
+          ${c.bar != null ? `<span class="qbar"><i style="width:${c.bar}%"></i></span>` : ''}</td>`;
+      }).join('')}
+    </tr>`).join('');
+
+  drawAddPicker();
+  drawRelated(rooms);
+}
+
+function drawAddPicker(){
+  const left = ALL.filter(r => !ids.includes(r.id));
+  const full = ids.length >= MAX;
+  $('addSel').disabled = full || !left.length;
+  $('addSel').innerHTML = full
+    ? `<option value="">Four rooms is the maximum</option>`
+    : `<option value="">— choose a room —</option>` +
+      left.map(r => `<option value="${r.id}">${esc(r.name)} · ${tzs(r.price)} TZS</option>`).join('');
+}
+
+/* ---------- Rooms like these ----------
+   Closest to the group on rent, and on distance too once an anchor is set. */
+function drawRelated(rooms){
+  const pool = ALL.filter(r => !ids.includes(r.id));
+  if (!pool.length){ $('relatedBlock').hidden = true; return; }
+
+  const avgPrice = rooms.reduce((s, r) => s + r.price, 0) / rooms.length;
+  const withKm = rooms.filter(r => r.km != null);
+  const avgKm = withKm.length ? withKm.reduce((s, r) => s + r.km, 0) / withKm.length : null;
+
+  const scored = pool.map(r => {
+    const dPrice = Math.abs(r.price - avgPrice) / Math.max(avgPrice, 1);
+    const dKm = (avgKm != null && r.km != null) ? Math.abs(r.km - avgKm) / Math.max(avgKm, 0.5) : 0;
+    return { r, score: dPrice + dKm, dPrice, dKm };
+  }).sort((x, y) => x.score - y.score).slice(0, 3);
+
+  $('relNote').textContent = avgKm != null
+    ? `Around ${tzs(Math.round(avgPrice / 1000) * 1000)} TZS and a similar distance from ${anchor().name.split(' (')[0]}.`
+    : `Around ${tzs(Math.round(avgPrice / 1000) * 1000)} TZS a month.`;
+
+  $('related').innerHTML = scored.map(({ r, dPrice, dKm }) => {
+    const why = (avgKm != null && dKm < 0.25 && dPrice < 0.08) ? 'Similar price and distance'
+              : (avgKm != null && dKm < 0.25) ? 'Similar distance'
+              : 'Similar price';
+    return `<article class="rel">
+      <div class="pic">
+        ${r.photo_url ? `<img src="${esc(r.photo_url)}" alt="" loading="lazy">` : photoSVG(r)}
+        <span class="why">${why}</span>
+      </div>
+      <div class="body">
+        <h3>${esc(r.name)}</h3>
+        <div class="meta">
+          <span class="price">${tzs(r.price)} TZS</span>
+          <span class="km">${r.km != null ? r.km.toFixed(1) + ' km away' : esc(r.area)}</span>
+        </div>
+        <div class="acts">
+          <a class="btn small ghost" href="/room?id=${r.id}">View room</a>
+          <button class="btn small" data-add="${r.id}">Add to compare</button>
+        </div>
+      </div>
+    </article>`;
+  }).join('');
+  $('relatedBlock').hidden = false;
+}
+
+/* ---------- Actions ---------- */
+function addRoom(id){
+  if (ids.includes(id)) return;
+  if (ids.length >= MAX){ toast(`You can compare ${MAX} rooms at a time. Remove one first.`); return; }
+  ids.push(id);
+  syncUrl();
+  draw();
+  toast('Added to the comparison.');
+}
+function removeRoom(id){
+  ids = ids.filter(x => x !== id);
+  syncUrl();
+  draw();
+}
+
+function openViewing(id){
+  currentListing = roomById(id);
+  if (!currentListing) return;
+  $('viewSub').textContent = currentListing.name;
+  $('vName').value = ''; $('vPhone').value = ''; $('vMsg').value = '';
+  $('viewMsg').className = 'form-msg';
+  $('viewModal').classList.add('open');
+}
+async function submitViewing(){
+  const msgBox = $('viewMsg'); msgBox.className = 'form-msg';
+  const body = {
+    listing_id: currentListing.id,
+    visitor_name: $('vName').value.trim(),
+    visitor_phone: $('vPhone').value.trim(),
+    message: $('vMsg').value.trim()
+  };
+  if (!body.visitor_name || !body.visitor_phone){
+    msgBox.textContent = 'Enter your name and phone number so the landlord can reach you.';
+    msgBox.className = 'form-msg err'; return;
+  }
+  $('viewSubmit').disabled = true;
+  try {
+    const res = await fetch('/api/viewings', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+    $('viewModal').classList.remove('open');
+    toast(data.message + ' The landlord will contact you.');
+  } catch (e) {
+    msgBox.textContent = e.message; msgBox.className = 'form-msg err';
+  } finally { $('viewSubmit').disabled = false; }
+}
+
+/* ---------- Wiring ---------- */
+document.addEventListener('click', e => {
+  const drop = e.target.closest('[data-drop]');
+  if (drop) return removeRoom(+drop.dataset.drop);
+  const add = e.target.closest('[data-add]');
+  if (add) return addRoom(+add.dataset.add);
+  const req = e.target.closest('[data-req]');
+  if (req) return openViewing(+req.dataset.req);
+});
+$('addSel').addEventListener('change', e => {
+  const id = +e.target.value;
+  if (id) addRoom(id);
+  e.target.value = '';
+});
+$('anchorSel').addEventListener('change', async e => {
+  anchorId = e.target.value;
+  syncUrl();
+  await loadListings();
+  draw();
+});
+$('cancelBtn').addEventListener('click', ()=>$('viewModal').classList.remove('open'));
+$('viewSubmit').addEventListener('click', submitViewing);
+$('viewModal').addEventListener('click', e => { if (e.target.id === 'viewModal') $('viewModal').classList.remove('open'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('viewModal').classList.remove('open'); });
+
+(async function init(){
+  const q = new URLSearchParams(location.search);
+  ids = (q.get('ids') || '').split(',').map(n => +n).filter(Boolean).slice(0, MAX);
+  anchorId = q.get('anchor') || '';
+
+  // Fall back to whatever was ticked on the rooms page
+  if (!ids.length){
+    try { ids = (JSON.parse(sessionStorage.getItem('utu-compare')) || []).slice(0, MAX); } catch {}
+  }
+
+  try {
+    const [anchors, amen] = await Promise.all([
+      fetch('/api/anchors').then(r => r.json()),
+      fetch('/api/amenities').then(r => r.json())
+    ]);
+    ANCHORS = anchors; AMENITIES = amen;
+    $('anchorSel').innerHTML = '<option value="">Nowhere in particular</option>' +
+      `<optgroup label="Universities">${ANCHORS.uni.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</optgroup>` +
+      `<optgroup label="Workplaces">${ANCHORS.work.map(a=>`<option value="${a.id}">${esc(a.name)}</option>`).join('')}</optgroup>`;
+    $('anchorSel').value = anchorId;
+    await loadListings();
+    draw();
+  } catch {
+    $('loading').textContent = 'Could not reach the server — is it running?';
+  }
+})();
+</script>
+<script src="/music.js"></script>
+</body>
+</html>

@@ -41,6 +41,7 @@ function musicTrack(){
 app.get('/api/music', (_req, res) => res.json(musicTrack()));
 
 app.get('/admin', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/compare', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'compare.html')));
 app.get('/room', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'room.html')));
 
 /* ---------- Anchors: universities & workplaces ---------- */
