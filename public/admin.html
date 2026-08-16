@@ -51,7 +51,7 @@ a{color:var(--orange)}
 .wrap{display:none;padding:clamp(16px,3vw,28px);max-width:1240px;margin:0 auto}
 .wrap.on{display:block}
 
-.stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:22px}
+.stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));margin-bottom:22px}
 .stat{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:16px 18px}
 .stat b{display:block;font-family:'Bricolage Grotesque';font-size:1.7rem;font-weight:800;letter-spacing:-.02em;
   font-variant-numeric:tabular-nums;line-height:1.1}
@@ -87,7 +87,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .rowbtns{display:flex;gap:6px;flex-wrap:wrap}
 
 /* ---------- Chat inbox ---------- */
-.inbox{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:16px;align-items:start}
+.inbox{display:grid;grid-template-columns:minmax(min(230px,100%),300px) 1fr;gap:16px;align-items:start}
 .threads{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;max-height:70vh;overflow-y:auto}
 .thread{display:block;width:100%;text-align:left;border:none;background:transparent;padding:13px 16px;border-bottom:1px solid var(--line)}
 .thread:hover{background:var(--cream)}
@@ -118,7 +118,7 @@ td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
 .call-btn[aria-disabled="true"]:hover{border-color:var(--line);color:var(--ink)}
 
 /* ---------- Post a room ---------- */
-.rooms-layout{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:16px;align-items:start}
+.rooms-layout{display:grid;grid-template-columns:minmax(min(300px,100%),380px) 1fr;gap:16px;align-items:start}
 /* narrower than the 820px default: this table shares the row with the form */
 .rooms-layout table{min-width:600px}
 .rooms-layout td:last-child{text-align:right;white-space:nowrap}

@@ -88,7 +88,7 @@ input,select,textarea{font-family:inherit;font-size:1rem}
 .results-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:22px}
 .results-head h2{font-size:1.45rem;font-weight:700;letter-spacing:-.02em}
 .results-head .count{color:var(--muted);font-size:.95rem}
-.grid{display:grid;gap:26px;grid-template-columns:repeat(auto-fill,minmax(290px,1fr))}
+.grid{display:grid;gap:26px;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr))}
 .card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s, box-shadow .2s;cursor:pointer}
 .card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
 .card:hover h3{color:var(--orange)}
@@ -150,7 +150,7 @@ input,select,textarea{font-family:inherit;font-size:1rem}
 .how{background:var(--cream);padding:60px clamp(16px,5vw,56px)}
 .how-inner{max-width:1120px;margin:0 auto}
 .how h2{font-size:clamp(1.5rem,3vw,2rem);font-weight:800;letter-spacing:-.02em;margin-bottom:32px}
-.how-grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.how-grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr))}
 .how-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:24px}
 .how-card .ic{width:44px;height:44px;border-radius:12px;background:var(--amber-soft);display:grid;place-items:center;margin-bottom:14px}
 .how-card h3{font-size:1.02rem;margin-bottom:6px}

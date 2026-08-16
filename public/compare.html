@@ -49,14 +49,22 @@ h1{font-size:clamp(1.5rem,3.4vw,2.2rem);font-weight:800;letter-spacing:-.03em;ma
 .controls .grow{flex:1 1 200px;min-width:0}
 .controls .count{color:var(--muted);font-size:.85rem;font-weight:600;margin-left:auto}
 
-.cmp-wrap{border:1.5px solid var(--line);border-radius:var(--radius);overflow-x:auto;background:#fff;margin-bottom:36px}
-table.cmp{border-collapse:collapse;width:100%;min-width:620px}
-table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:middle;font-size:.9rem}
+/* Fixed layout with no minimum width: the columns divide whatever space there
+   is, so the table fits the screen instead of scrolling sideways off it. */
+.slots{display:none;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.slots .lbl{font-size:.8rem;font-weight:700;color:var(--muted);align-self:center;margin-right:2px}
+.slot{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;
+  padding:7px 14px;font-weight:700;font-size:.8rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.cmp-wrap{border:1.5px solid var(--line);border-radius:var(--radius);background:#fff;margin-bottom:36px;overflow:hidden}
+table.cmp{border-collapse:collapse;width:100%;table-layout:fixed}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:12px 14px;text-align:left;vertical-align:middle;
+  font-size:.9rem;overflow-wrap:anywhere}
 table.cmp tr:last-child td,table.cmp tr:last-child th{border-bottom:none}
 table.cmp thead th{background:var(--cream);vertical-align:top}
 th.rowhead{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;
-  width:180px;background:var(--cream);position:sticky;left:0;z-index:1}
-.cmp-room{min-width:190px}
+  width:170px;background:var(--cream);overflow-wrap:normal;word-break:normal}
 .cmp-room img,.cmp-room svg{width:100%;aspect-ratio:16/10;object-fit:cover;border-radius:10px;margin-bottom:9px}
 .cmp-room b{display:block;font-size:.95rem;line-height:1.25}
 .cmp-room .area{display:block;color:var(--muted);font-size:.78rem;margin-bottom:9px}
@@ -74,7 +82,7 @@ td.val .flag{display:block;font-size:.68rem;font-weight:700;letter-spacing:.06em
 /* ---------- Related ---------- */
 h2.sec{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
 p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
-.rel-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rel-grid{display:grid;gap:20px;grid-template-columns:repeat(auto-fill,minmax(min(250px,100%),1fr))}
 .rel{border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;background:#fff;display:flex;flex-direction:column;
   transition:transform .2s,box-shadow .2s}
 .rel:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
@@ -111,21 +119,24 @@ p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
   padding:12px 22px;border-radius:999px;font-weight:600;font-size:.92rem;opacity:0;transition:all .3s;z-index:200;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-@media (max-width:700px){
+@media (max-width:760px){
   .controls{flex-direction:column;align-items:stretch;gap:6px}
   /* flex-grow runs down the page once this is a column, so stop it stretching */
   .controls .grow{flex:0 0 auto}
   .controls label{margin-top:6px}
   .controls .count{margin-left:0;margin-top:4px}
   .controls select{width:100%}
-  th.rowhead{width:126px;font-size:.68rem;padding:12px 10px}
-  table.cmp{min-width:480px}
-  .cmp-room{min-width:172px}
-  .cmp-room .acts .btn{flex:1 1 100%}
+  .slots{display:flex}
+  th.rowhead{width:112px;font-size:.66rem;padding:11px 8px;letter-spacing:.05em}
+  table.cmp th,table.cmp td{padding:11px 9px;font-size:.86rem}
+  .cmp-room b{font-size:.88rem}
+  .cmp-room .acts{flex-direction:column}
+  .cmp-room .acts .btn{width:100%}
+  .qbar{max-width:100%}
 }
-@media (max-width:420px){
-  th.rowhead{width:106px}
-  table.cmp th,table.cmp td{padding:10px 9px;font-size:.85rem}
+@media (max-width:400px){
+  th.rowhead{width:96px;font-size:.62rem}
+  table.cmp th,table.cmp td{padding:10px 7px;font-size:.82rem}
 }
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
@@ -161,6 +172,8 @@ p.sec-note{color:var(--muted);font-size:.92rem;margin-bottom:16px}
     <span class="grow"><select id="addSel" style="width:100%"></select></span>
     <span class="count" id="count"></span>
   </div>
+
+  <div class="slots" id="slots"></div>
 
   <div class="cmp-wrap">
     <table class="cmp">
@@ -204,6 +217,7 @@ let ANCHORS = { uni: [], work: [] };
 let AMENITIES = [];
 let ALL = [];              // every listing, with km when an anchor is chosen
 let ids = [];              // the rooms being compared, in order
+let shown = [];            // the subset visible in the table on narrow screens
 let anchorId = '';
 let currentListing = null;
 
@@ -243,7 +257,30 @@ async function loadListings(){
   ALL = await fetch('/api/listings?' + p.toString()).then(r => r.json());
 }
 
-/* ---------- Table ---------- */
+/* ---------- Table ----------
+   A narrow screen cannot show four rooms at a readable width, so it shows two
+   and lets the visitor choose which two. Nothing scrolls sideways either way. */
+function capacity(){ return window.innerWidth < 760 ? 2 : MAX; }
+
+function visibleIds(){
+  const cap = capacity();
+  if (ids.length <= cap) return ids.slice();
+  const kept = shown.filter(id => ids.includes(id)).slice(0, cap);
+  for (const id of ids){ if (kept.length >= cap) break; if (!kept.includes(id)) kept.push(id); }
+  return kept;
+}
+
+function drawSlots(){
+  const cap = capacity();
+  if (ids.length <= cap){ $('slots').innerHTML = ''; $('slots').style.display = ''; return; }
+  const vis = visibleIds();
+  $('slots').style.display = 'flex';
+  $('slots').innerHTML = `<span class="lbl">Showing</span>` + ids.map(id => {
+    const r = roomById(id);
+    return `<button class="slot ${vis.includes(id) ? 'on' : ''}" data-slot="${id}">${esc(r ? r.name : '')}</button>`;
+  }).join('');
+}
+
 function draw(){
   const rooms = ids.map(roomById).filter(Boolean);
   ids = rooms.map(r => r.id);
@@ -254,13 +291,20 @@ function draw(){
   }
   $('loading').hidden = true; $('tooFew').hidden = true; $('content').hidden = false;
 
+  drawSlots();
+  const vis = visibleIds();
+  shown = vis.slice();
+  const shownRooms = vis.map(roomById).filter(Boolean);
+
   const a = anchor();
   $('lede').textContent = a
     ? `Rent, distance from ${a.name}, and what each room comes with. The best value in every row is highlighted.`
     : 'Rent and what each room comes with. Choose a campus or workplace to add distance and commute time.';
-  $('count').textContent = `${rooms.length} of ${MAX} rooms`;
+  $('count').textContent = shownRooms.length < rooms.length
+    ? `${rooms.length} rooms · showing ${shownRooms.length}`
+    : `${rooms.length} of ${MAX} rooms`;
 
-  $('cmpHead').innerHTML = '<th class="rowhead">Room</th>' + rooms.map(r => `
+  $('cmpHead').innerHTML = '<th class="rowhead">Room</th>' + shownRooms.map(r => `
     <th class="cmp-room">
       ${r.photo_url ? `<img src="${esc(r.photo_url)}" alt="" loading="lazy" onerror="this.outerHTML='${''}'">` : photoSVG(r)}
       <b>${esc(r.name)}</b>
@@ -272,30 +316,32 @@ function draw(){
       </span>
     </th>`).join('');
 
-  const cheapest = Math.min(...rooms.map(r => r.price));
-  const nearest  = a ? Math.min(...rooms.map(r => r.km ?? Infinity)) : null;
-  const mostFeat = Math.max(...rooms.map(r => r.featureCount || 0));
+  // Flags describe the rooms actually on screen, so "cheapest" is never invisible
+  const cheapest = Math.min(...shownRooms.map(r => r.price));
+  const nearest  = a ? Math.min(...shownRooms.map(r => r.km ?? Infinity)) : null;
+  const mostFeat = Math.max(...shownRooms.map(r => r.featureCount || 0));
 
   const rows = [];
-  rows.push(['Monthly rent', rooms.map(r => ({
+  rows.push(['Monthly rent', shownRooms.map(r => ({
     v: tzs(r.price) + ' TZS', best: r.price === cheapest, flag: r.price === cheapest ? 'Cheapest' : '' }))]);
 
   if (a){
-    rows.push([`Distance from ${a.name.split(' (')[0]}`, rooms.map(r => ({
+    // The lede already names the anchor, so the row label stays short
+    rows.push(['Distance', shownRooms.map(r => ({
       v: r.km != null ? r.km.toFixed(1) + ' km' : '—',
       best: r.km === nearest, flag: r.km === nearest ? 'Nearest' : '' }))]);
-    rows.push(['Daladala commute', rooms.map(r => ({
+    rows.push(['Daladala commute', shownRooms.map(r => ({
       v: r.km != null ? '≈ ' + commuteMins(r.km) + ' min' : '—', best: r.km === nearest, flag: '' }))]);
   }
 
-  rows.push(['Bedrooms', rooms.map(r => ({ v: String(r.beds), best:false, flag:'' }))]);
-  rows.push(['Master bedroom', rooms.map(r => ({ tick: r.master }))]);
-  rows.push(['Features in total', rooms.map(r => ({
+  rows.push(['Bedrooms', shownRooms.map(r => ({ v: String(r.beds), best:false, flag:'' }))]);
+  rows.push(['Master bedroom', shownRooms.map(r => ({ tick: r.master }))]);
+  rows.push(['Features in total', shownRooms.map(r => ({
     v: `${r.featureCount} of ${r.featureTotal}`,
     bar: Math.round((r.featureCount / r.featureTotal) * 100),
     best: r.featureCount === mostFeat, flag: r.featureCount === mostFeat ? 'Most complete' : '' }))]);
-  AMENITIES.forEach(am => rows.push([am.label, rooms.map(r => ({ tick: !!(r.amenities || {})[am.key] }))]));
-  rows.push(['Landlord', rooms.map(r => ({ v: r.landlord_name || '—', best:false, flag:'' }))]);
+  AMENITIES.forEach(am => rows.push([am.label, shownRooms.map(r => ({ tick: !!(r.amenities || {})[am.key] }))]));
+  rows.push(['Landlord', shownRooms.map(r => ({ v: r.landlord_name || '—', best:false, flag:'' }))]);
 
   $('cmpBody').innerHTML = rows.map(([label, cells]) => `
     <tr>
@@ -416,6 +462,13 @@ async function submitViewing(){
 
 /* ---------- Wiring ---------- */
 document.addEventListener('click', e => {
+  const slot = e.target.closest('[data-slot]');
+  if (slot){
+    const id = +slot.dataset.slot;
+    if (shown.includes(id)) return;          // already on screen
+    shown = [...shown.slice(1), id];         // replace the one shown longest
+    return draw();
+  }
   const drop = e.target.closest('[data-drop]');
   if (drop) return removeRoom(+drop.dataset.drop);
   const add = e.target.closest('[data-add]');
@@ -438,6 +491,13 @@ $('cancelBtn').addEventListener('click', ()=>$('viewModal').classList.remove('op
 $('viewSubmit').addEventListener('click', submitViewing);
 $('viewModal').addEventListener('click', e => { if (e.target.id === 'viewModal') $('viewModal').classList.remove('open'); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('viewModal').classList.remove('open'); });
+
+// Rotating a phone changes how many rooms fit, so redraw when that changes
+let lastCap = null;
+window.addEventListener('resize', () => {
+  const cap = capacity();
+  if (cap !== lastCap){ lastCap = cap; if (ids.length >= 2) draw(); }
+});
 
 (async function init(){
   const q = new URLSearchParams(location.search);
